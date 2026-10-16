@@ -61,7 +61,11 @@ _JS_CARTE = r"""
 BOUTONS_SANS_RISQUE = [r"^(re)?cherch", r"^actualis", r"^rafra[iî]ch", r"^afficher", r"^voir\b", r"^filtrer", r"^trier",
                        r"^suivant$", r"^pr[ée]c[ée]dent$", r"^ok$",
                        r"^(se |me )?connecter$", r"^connexion$", r"^s'identifier$", r"^v[ée]rifier( le code)?$",
-                       r"^valider (le )?code$"]
+                       r"^valider (le )?code$",
+                       # bandeaux de cookies : toujours acceptés (consigne de l'opticien)
+                       r"^(tout |tous )accepter$", r"^accepter (tout|tous|tous les cookies|les cookies|et fermer|et continuer)$", r"^tout accepter$",
+                       r"^j'accepte (tout|les cookies)$",
+                       r"^(accept|allow) all( cookies)?$", r"^(i )?agree$", r"^tout autoriser$", r"^autoriser (tous )?les cookies$"]
 
 # Repère le formulaire de connexion visible : identifiant (u), mot de passe (p), bouton (s), code reçu (c).
 _JS_CONNEXION = r"""
