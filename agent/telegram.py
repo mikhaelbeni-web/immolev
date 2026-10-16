@@ -57,6 +57,10 @@ class ApiTelegramHttp:
         return self.http.get(f"{self.fichiers}/{chemin}").content
 
 
+MOTS_OUI = {"confirmé", "confirme", "confirmer", "oui", "ok", "valide", "validé", "c'est bon", "vas-y", "go", "d'accord"}
+MOTS_NON = {"non", "annule", "annuler", "annulé", "stop"}
+
+
 @dataclass
 class Tache:
     numero: int
@@ -88,6 +92,7 @@ class Pont:
     _annoncees: set[int] = field(default_factory=set)
     contextes: dict[int, tuple[float, Contexte]] = field(default_factory=dict)
     actions: dict[str, tuple[int, ActionEnAttente]] = field(default_factory=dict)
+    actions_le: dict[str, float] = field(default_factory=dict)
 
     def _contexte(self, chat_id: int) -> Contexte:
         maintenant = time.time()
@@ -171,6 +176,10 @@ class Pont:
         if not demande:
             return
         commande = demande.strip().lower()
+        if (oui := commande.strip(" .!") in MOTS_OUI) or commande.strip(" .!") in MOTS_NON:
+            attente = [i for i, (c, _) in self.actions.items() if c == chat_id]
+            if attente:  # un mot de confirmation vaut un clic sur le dernier bouton de ce groupe
+                return self._confirmer(attente[-1], oui, auteur)
         if commande in ("/taches", "/tâches", "taches", "tâches", "/file"):
             return self._envoyer(chat_id, self._etat_file())
         if m := re.fullmatch(r"/?annuler\s+(?:la\s+)?(?:tâche\s+|tache\s+)?(?:n°\s*)?(\d+)", commande):
@@ -202,6 +211,8 @@ class Pont:
         self._envoyer(chat_id, resultat.texte or "Fait.")
         for action in resultat.en_attente:
             self.actions[action.id] = (chat_id, action)
+            self.actions_le[action.id] = time.time()
+            self._sauver_actions()
             ordo = ctx.ordonnances.get(action.parametres.get("photo_id", ""))
             apercu = f"\nVérifie contre l'ordonnance papier :\n{apercu_ordonnance(ordo)}" if ordo else ""
             if action.outil == "cliquer_bouton" and self.navigateur:
@@ -244,6 +255,28 @@ class Pont:
 
     def _fichier_file(self):
         return dossier_donnees() / "taches.json"
+
+    def _sauver_actions(self) -> None:
+        try:
+            (dossier_donnees() / "actions-en-attente.json").write_text(json.dumps(
+                [{"chat_id": c, "id": a.id, "outil": a.outil, "parametres": a.parametres, "le": t}
+                 for c, a, t in self._horodatees()], ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            logging.exception("sauvegarde des actions en attente")
+
+    def _horodatees(self):
+        return [(c, a, self.actions_le.get(a.id, time.time())) for c, a in self.actions.values()]
+
+    def _recharger_actions(self) -> None:
+        """Les boutons « Confirmer » restent valables après un redémarrage de l'agent (2 h)."""
+        try:
+            anciennes = json.loads((dossier_donnees() / "actions-en-attente.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        for d in anciennes:
+            if time.time() - d.get("le", 0) < 7200:
+                self.actions[d["id"]] = (d["chat_id"], ActionEnAttente(d["id"], d["outil"], d["parametres"]))
+                self.actions_le[d["id"]] = d["le"]
 
     def _sauver(self) -> None:
         if not self.asynchrone:
@@ -343,20 +376,31 @@ class Pont:
             self._envoyer(chat, f"Demande de {demande['nom']} refusée.")
 
     def _traiter_bouton(self, cb: dict[str, Any]) -> None:
-        self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"])
         self._relire_membres()
         if cb.get("from", {}).get("id") not in self.membres:
-            return
+            return self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"])
         choix, _, action_id = cb.get("data", "").partition(":")
         if choix in ("membre_ok", "membre_non"):
+            self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"])
             return self._decider_membre(cb, choix, action_id)
+        chat = (cb.get("message") or {}).get("chat", {}).get("id")
         if action_id not in self.actions:
+            self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"], text="Cette demande n'est plus active.")
+            if chat:
+                self._envoyer(chat, "Ce bouton n'est plus actif (demande déjà traitée ou trop ancienne). "
+                                    "Redemande l'action et je te renverrai un nouveau bouton.")
             return
+        self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"],
+                         text="Reçu, j'exécute…" if choix == "ok" else "Annulé.")
+        self._confirmer(action_id, choix == "ok", cb["from"]["id"])
+
+    def _confirmer(self, action_id: str, accepte: bool, qui: int) -> None:
         chat_id, action = self.actions.pop(action_id)
-        if choix != "ok":
+        self.actions_le.pop(action_id, None)
+        self._sauver_actions()
+        if not accepte:
             tracer(action.outil, action.id, "annulee")
             return self._envoyer(chat_id, f"Annulé : {action.outil}")
-        qui = cb["from"]["id"]
 
         def executer() -> None:
             reponse = executer_confirmee(action, self._outils(self._contexte(chat_id)))
@@ -374,6 +418,7 @@ class Pont:
         """Écoute Telegram dans un fil à part ; les tâches tournent dans le fil principal (celui de Chrome)."""
         self.asynchrone = True
         self._recharger()
+        self._recharger_actions()
         threading.Thread(target=self._boucle_ecoute, daemon=True).start()
         self._boucle_travail()
 

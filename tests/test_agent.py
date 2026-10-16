@@ -212,3 +212,37 @@ def test_file_des_taches(tmp_path, monkeypatch):
         time.sleep(0.05)
     assert faites == ["A", "C"]
     assert any(t.startswith("▶️ Je commence la tâche n° 3") for t in tg.textes())
+
+
+def _pont_avec_action(tmp_path, monkeypatch):
+    from agent import telegram
+    from agent.orchestrateur import ActionEnAttente, Resultat
+    monkeypatch.setattr(telegram, "dossier_donnees", lambda: tmp_path)
+    tg, executees = TelegramFactice(), []
+    pont = Pont(tg, membres={11}, traiter_demande=lambda d, o: Resultat("ok"))
+    pont.actions["a1"] = (5, ActionEnAttente("a1", "creer_brouillon", {"sujet": "x"}))
+    pont.actions_le["a1"] = __import__("time").time()
+    pont._sauver_actions()
+    monkeypatch.setattr(telegram, "executer_confirmee", lambda a, o: executees.append(a.id) or "Brouillon créé.")
+    return pont, tg, executees
+
+
+def test_mot_confirme_vaut_le_bouton(tmp_path, monkeypatch):
+    pont, tg, executees = _pont_avec_action(tmp_path, monkeypatch)
+    pont.traiter_update({"message": {"message_id": 1, "from": {"id": 11}, "chat": {"id": 5}, "text": "Confirmé"}})
+    assert executees == ["a1"] and "Brouillon créé." in tg.textes()[-1] and not pont.actions
+
+
+def test_bouton_perime_repond_au_lieu_de_tourner_dans_le_vide(tmp_path, monkeypatch):
+    pont, tg, _ = _pont_avec_action(tmp_path, monkeypatch)
+    pont.traiter_update({"callback_query": {"id": "c", "from": {"id": 11}, "data": "ok:inconnu", "message": {"chat": {"id": 5}}}})
+    rep = [p for m, p in tg.envois if m == "answerCallbackQuery"][-1]
+    assert "plus active" in rep["text"] and "plus actif" in tg.textes()[-1]
+
+
+def test_actions_en_attente_survivent_au_redemarrage(tmp_path, monkeypatch):
+    pont, tg, executees = _pont_avec_action(tmp_path, monkeypatch)
+    neuf = Pont(tg, membres={11})
+    neuf._recharger_actions()
+    neuf.traiter_update({"callback_query": {"id": "c", "from": {"id": 11}, "data": "ok:a1", "message": {"chat": {"id": 5}}}})
+    assert executees == ["a1"]
