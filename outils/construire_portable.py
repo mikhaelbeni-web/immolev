@@ -3,7 +3,8 @@
     python outils/construire_portable.py <cpython-3.12-windows-install_only_stripped.tar.gz> <dist/Optizien-v{n}.zip>
 
 Le Python vient de python-build-standalone (astral-sh), vérifié par SHA256 avant l'appel.
-Les dépendances ne sont pas incluses : le panneau les installe au premier lancement.
+Les dépendances lourdes ne sont pas incluses : le panneau les installe au premier lancement.
+Le coffre des secrets (keyring et ses dépendances, en Python pur) est embarqué depuis outils/roues.
 """
 from __future__ import annotations
 
@@ -49,6 +50,14 @@ def construire(archive_python: Path, sortie: Path) -> None:
         for chemin in INUTILE_PY:
             p = systeme / "python" / chemin
             shutil.rmtree(p) if p.is_dir() else p.unlink(missing_ok=True)
+        paquets = systeme / "python" / "Lib" / "site-packages"
+        paquets.mkdir(parents=True, exist_ok=True)
+        roues = sorted((RACINE / "outils" / "roues").glob("*.whl"))
+        if not roues:
+            raise SystemExit("outils/roues est vide : le coffre des secrets ne serait pas embarqué.")
+        for roue in roues:
+            with zipfile.ZipFile(roue) as z:
+                z.extractall(paquets)
         app = systeme / "app"
         for nom in CODE:
             src = RACINE / nom

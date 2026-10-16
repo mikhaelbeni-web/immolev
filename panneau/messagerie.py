@@ -101,7 +101,7 @@ class Messagerie:
         d["mail"] = [a for a in d["mail"] if a != adresse]
         self._ecrire(d)
         try:
-            import keyring
+            from agent import coffre as keyring
             keyring.delete_password("optizien", f"MAIL:{adresse}")
         except Exception:
             pass
@@ -185,7 +185,7 @@ class Messagerie:
         d["gmail"] = [a for a in d["gmail"] if a != adresse]
         self._ecrire(d)
         try:
-            import keyring
+            from agent import coffre as keyring
             keyring.delete_password("optizien", f"GMAIL_JETON:{adresse}")
         except Exception:
             pass

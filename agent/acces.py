@@ -42,8 +42,8 @@ def domaine_correspond(hote: str, domaine: str) -> bool:
 
 
 def _keyring():
-    import keyring
-    return keyring
+    from . import coffre
+    return coffre
 
 
 def lister() -> list[dict]:

@@ -135,7 +135,7 @@ class BoiteImap:
 
 
 def charger(adresse: str) -> BoiteImap:
-    import keyring
+    from agent import coffre as keyring
     brut = keyring.get_password(SERVICE_COFFRE, cle(adresse))
     if not brut:
         raise SystemExit(f"Boîte {adresse} absente du coffre : l'ajouter dans le panneau Optizien")
@@ -145,7 +145,7 @@ def charger(adresse: str) -> BoiteImap:
 
 def enregistrer(adresse: str, mot_de_passe: str, imap: str = "", smtp: str = "") -> BoiteImap:
     """Teste la connexion puis range le code dans le coffre. Lève ValueError avec un message clair."""
-    import keyring
+    from agent import coffre as keyring
     adresse = adresse.strip().lower()
     mot_de_passe = mot_de_passe.replace(" ", "").strip() if serveurs_pour(adresse) == SERVEURS["gmail.com"] else mot_de_passe.strip()
     if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[a-z]{2,}", adresse):

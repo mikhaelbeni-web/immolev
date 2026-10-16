@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import keyring
+from agent import coffre as keyring
 
 SERVICE = "optizien"
 

@@ -16,12 +16,12 @@ SERVICE = "optizien"
 
 
 def _keyring_lire() -> str | None:
-    import keyring
+    from . import coffre as keyring
     return keyring.get_password(SERVICE, "TELEGRAM_MEMBRES")
 
 
 def _keyring_ecrire(valeur: str) -> None:
-    import keyring
+    from . import coffre as keyring
     keyring.set_password(SERVICE, "TELEGRAM_MEMBRES", valeur)
 
 

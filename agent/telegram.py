@@ -426,8 +426,8 @@ def secret(nom: str) -> str:
     valeur = os.environ.get(nom)
     if not valeur:
         try:
-            import keyring
-            valeur = keyring.get_password("optizien", nom)
+            from . import coffre
+            valeur = coffre.get_password("optizien", nom)
         except Exception:
             valeur = None
     if not valeur:

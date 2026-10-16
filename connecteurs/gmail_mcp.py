@@ -42,7 +42,7 @@ def _brut(destinataire: str, sujet: str, texte: str) -> str:
 
 class BoiteGmail:
     def __init__(self, adresse: str) -> None:
-        import keyring
+        from agent import coffre as keyring
         from google.auth.transport.requests import Request
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
@@ -159,7 +159,7 @@ def creer_serveur(boites: "Boite | dict[str, Boite]", nom: str = "gmail") -> MCP
 
 def connexion(fichier_client: str) -> str:
     """Ouvre la page de consentement Google ; renvoie l'adresse de la boîte connectée."""
-    import keyring
+    from agent import coffre as keyring
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 

@@ -53,9 +53,8 @@ def charger_composants() -> None:
 
 
 def _keyring():
-    importlib.invalidate_caches()
-    import keyring
-    return keyring
+    from agent import coffre  # coffre Windows, sinon fichier chiffré par Windows
+    return coffre
 
 
 def lire_secret(nom: str) -> str | None:
