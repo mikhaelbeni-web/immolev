@@ -53,7 +53,7 @@ _JS_CARTE = r"""
     }
     elements.push(item);
   }
-  return { url: location.href, titre: document.title, texte: document.body.innerText.slice(0, 6000), elements };
+  return { url: location.href, titre: document.title, texte: document.body.innerText.slice(0, 60000), elements };
 }
 """
 
@@ -84,6 +84,10 @@ _JS_CONNEXION = r"""
   return { ident: !!ident, mdp: !!mdp, bouton: !!bouton, code: code && !mdp ? (code.getAttribute('data-agent-ref') || '?') : null };
 }
 """
+
+
+MAX_ELEMENTS = 120   # éléments listés par lecture de page
+MAX_TEXTE = 5000     # caractères de texte par lecture de page
 
 
 class Navigateur:
@@ -142,22 +146,42 @@ class Navigateur:
             if sous["elements"] or sous["texte"].strip():
                 carte["elements"] += sous["elements"]
                 carte["texte"] += f"\n--- cadre {i} ---\n" + sous["texte"]
-        carte["texte"] = carte["texte"][:12000]
         self._derniere = carte
         return carte
 
     def lire_page(self) -> str:
+        """Page résumée : chaque lecture est renvoyée au modèle et facturée, d'où les plafonds."""
         c = self.carte()
+        elements, texte = c["elements"], re.sub(r"\n\s*\n+", "\n", c["texte"]).strip()
         lignes = [f"URL : {c['url']}", f"Titre : {c['titre']}", "Éléments :"]
-        for e in c["elements"]:
+        lignes += self._lignes(elements[:MAX_ELEMENTS])
+        if len(elements) > MAX_ELEMENTS:
+            lignes.append(f"  … {len(elements) - MAX_ELEMENTS} autres éléments : utilise chercher_dans_page pour les trouver.")
+        lignes.append("Texte de la page :\n" + texte[:MAX_TEXTE])
+        if len(texte) > MAX_TEXTE:
+            lignes.append(f"… texte coupé ({len(texte)} caractères) : utilise chercher_dans_page pour la suite.")
+        return "\n".join(lignes)
+
+    def chercher_dans_page(self, texte: str) -> str:
+        """Éléments et lignes de texte de la page qui contiennent un mot (sans tout relire)."""
+        c, mot = self.carte(), texte.lower().strip()
+        trouves = [e for e in c["elements"] if mot in e["libelle"].lower() or mot in str(e.get("valeur", "")).lower()]
+        passages = [l.strip() for l in c["texte"].splitlines() if mot in l.lower()][:40]
+        lignes = [f"URL : {c['url']}", f"Éléments contenant « {texte} » :"] + (self._lignes(trouves[:60]) or ["  (aucun)"])
+        lignes.append("Lignes de texte :\n" + ("\n".join(l[:300] for l in passages) or "(aucune)"))
+        return "\n".join(lignes)
+
+    @staticmethod
+    def _lignes(elements: list[dict[str, Any]]) -> list[str]:
+        lignes = []
+        for e in elements:
             detail = "" if e["sorte"] not in ("champ", "liste") else f" [{e['type']}] = {json.dumps(e['valeur'], ensure_ascii=False)}"
             if e.get("options"):
                 detail += f" options={e['options']}"
             if e.get("lecture_seule"):
                 detail += " (lecture seule)"
             lignes.append(f"  #{e['ref']} {e['sorte']} « {e['libelle']} »{detail}")
-        lignes.append("Texte de la page :\n" + c["texte"])
-        return "\n".join(lignes)
+        return lignes
 
     def aller_a(self, url: str) -> str:
         self.page.goto(url)
@@ -278,6 +302,8 @@ def outils_navigateur(nav: Navigateur) -> dict[str, Outil]:
     ref = {"ref": {"type": "string", "description": "Numéro #ref lu par lire_page"}}
     outils = [
         Outil("lire_page", "Lit la page affichée dans Chrome : URL, champs avec leurs valeurs, boutons, liens, texte.", {}, False, nav.lire_page),
+        Outil("chercher_dans_page", "Cherche un mot dans la page affichée (éléments et lignes de texte) sans tout relire : moins cher que lire_page sur une longue page.",
+              {"texte": {"type": "string"}}, False, nav.chercher_dans_page),
         Outil("aller_a", "Ouvre une adresse dans Chrome (MyEasyOptic, portail de tiers payant, messagerie).",
               {"url": {"type": "string"}}, False, nav.aller_a),
         Outil("suivre_lien", "Clique sur un lien ou un onglet pour naviguer. Refusé sur un bouton.", ref, False, nav.suivre_lien),

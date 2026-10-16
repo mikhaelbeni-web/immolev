@@ -475,6 +475,28 @@ class Etat:
         elif lien.exists():
             lien.unlink()
 
+    # intelligence de l'agent : modèle et plafond par demande (lus par agent/orchestrateur.py) ---------
+    def ia(self) -> dict:
+        def lire(nom, defaut):
+            try:
+                return json.loads((DONNEES / nom).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                return defaut
+        reg = {"modele": "standard", "plafond": 1.0, **lire("reglages-ia.json", {})}
+        return {**reg, "couts": lire("cout-demandes.json", [])[-8:][::-1]}
+
+    def regler_ia(self, modele: str, plafond) -> None:
+        if modele not in ("economique", "standard", "puissant"):
+            raise ValueError("Modèle inconnu.")
+        try:
+            plafond = round(float(str(plafond).replace(",", ".")), 2)
+        except ValueError:
+            raise ValueError("Plafond invalide : un montant en euros, ex. 0,50.") from None
+        if not 0.05 <= plafond <= 50:
+            raise ValueError("Plafond entre 0,05 € et 50 €.")
+        DONNEES.mkdir(parents=True, exist_ok=True)
+        (DONNEES / "reglages-ia.json").write_text(json.dumps({"modele": modele, "plafond": plafond}), encoding="utf-8")
+
     def vue(self) -> dict:
         cle, jeton = lire_secret("ANTHROPIC_API_KEY"), lire_secret("TELEGRAM_TOKEN")
         return {
@@ -494,6 +516,7 @@ class Etat:
             "options": self.options(),
             "visage": {"choix": visage.lire(DONNEES), "liste": visage.liste(),
                        "perso": (DONNEES / "visage-perso.jpg").exists()},
+            "ia": self.ia(),
         }
 
 
@@ -575,6 +598,8 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 if choix:  # visage choisi avant le bot : on le pose maintenant
                     threading.Thread(target=visage.choisir, args=(DONNEES, choix["id"], choix["nom"], jeton_bot),
                                      daemon=True).start()
+            elif chemin == "/api/ia":
+                etat.regler_ia(str(c.get("modele", "")), c.get("plafond", ""))
             elif chemin == "/api/visage/importer":
                 visage.importer(DONNEES, base64.b64decode(str(c.get("image", "")).split(",")[-1]))
             elif chemin == "/api/visage":

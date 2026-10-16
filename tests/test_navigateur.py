@@ -55,6 +55,7 @@ class ClaudeNavigateur:
     def __init__(self, etapes):
         self.etapes = list(etapes)
         self.messages = self
+        self.beta = self
 
     def create(self, **kw):
         dernier = kw["messages"][-1]["content"]

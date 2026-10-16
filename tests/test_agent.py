@@ -18,6 +18,7 @@ class ClaudeScripte:
     def __init__(self, etapes):
         self.etapes, self.appels = list(etapes), []
         self.messages = self
+        self.beta = self
 
     def create(self, **kw):
         self.appels.append(kw)

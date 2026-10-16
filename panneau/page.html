@@ -296,6 +296,20 @@
       <div class="ligne" style="margin-top:12px"><label class="petit" for="i-maj">Mettre à jour depuis un fichier Optizien.zip :</label>
         <input type="file" id="i-maj" accept=".zip"></div>
       <div class="msg" id="m7"></div>
+      <h3 class="sous-titre">Intelligence de l'agent</h3>
+      <p class="petit">Le modèle fixe le coût de chaque demande. Le plafond arrête une demande qui coûterait plus cher.</p>
+      <div class="ligne">
+        <select class="champ" id="s-modele">
+          <option value="economique">Économique (Claude Haiku) : quelques centimes par demande</option>
+          <option value="standard">Standard (Claude Sonnet) : environ 0,10 à 0,50 € par demande</option>
+          <option value="puissant">Puissant (Claude Opus) : environ 0,30 à 1 € par demande</option>
+        </select>
+        <label class="petit" for="i-plafond">Plafond par demande (€)</label>
+        <input type="text" id="i-plafond" style="flex:0 0 90px;min-width:90px" autocomplete="off">
+        <button class="second" id="b-ia">Enregistrer</button>
+      </div>
+      <div class="msg" id="m-ia"></div>
+      <table id="t-couts"></table>
       <h3 class="sous-titre">Mises à jour en ligne</h3>
       <p class="petit" id="p-compte">Avec le compte Optizien du magasin, les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »).</p>
       <div class="ligne" id="f-compte">
@@ -336,6 +350,12 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 function afficher(e) {
   etat = e;
   if (e.visage) afficherVisages(e.visage);
+  if (e.ia) {
+    if (document.activeElement !== $("s-modele") && !$("s-modele").dataset.touche) $("s-modele").value = e.ia.modele;
+    if (document.activeElement !== $("i-plafond") && !$("i-plafond").dataset.touche) $("i-plafond").value = String(e.ia.plafond).replace(".", ",");
+    $("t-couts").innerHTML = e.ia.couts.length ? "<tr><td colspan=2 class=petit style='text-align:left'>Dernières demandes (coût)</td></tr>" + e.ia.couts.map(c =>
+      `<tr><td><span class="petit">${esc(c.date)}</span> ${esc(c.demande)}</td><td>${c.cout.toFixed(2).replace(".", ",")} €</td></tr>`).join("") : "";
+  }
   const c = e.composants;
   fait(1, c.ok, c.ok ? "Installés" : (c.en_cours ? "Installation…" : "À installer"));
   $("b-installer").classList.toggle("cache", c.ok || c.en_cours);
@@ -451,6 +471,12 @@ document.addEventListener("click", ev => {
   }
 });
 $("i-prenom").oninput = () => { prenomTouche = true; };
+$("s-modele").onchange = () => { $("s-modele").dataset.touche = 1; };
+$("i-plafond").oninput = () => { $("i-plafond").dataset.touche = 1; };
+$("b-ia").onclick = () => action($("b-ia"), "m-ia", async () => {
+  await api("/api/ia", {modele: $("s-modele").value, plafond: $("i-plafond").value});
+  delete $("s-modele").dataset.touche; delete $("i-plafond").dataset.touche;
+}, () => "Enregistré : l'agent l'applique dès la prochaine demande.");
 $("i-visage-perso").onchange = async ev => {
   const fichier = ev.target.files[0]; if (!fichier) return;
   msg("m-visage", "Préparation de l'image…", "att");
