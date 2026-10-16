@@ -439,6 +439,18 @@ class Etat:
         except Exception:
             return {"texte": "", "vide": True}
 
+    def fiche(self) -> dict:
+        try:
+            self._acces()
+            from agent import fiche
+            rep = fiche.lire()
+            return {"questions": [{"id": i, "theme": t, "question": q, "exemple": ex, "reponse": rep.get(i, "")}
+                                  for i, t, q, ex in fiche.QUESTIONS],
+                    "procedures": [{"nom": n, "etapes": e} for n, e in fiche.procedures().items()],
+                    "reglementation": fiche.connaissances()}
+        except Exception:
+            return {"questions": [], "procedures": [], "reglementation": ""}
+
     def acces(self) -> list[dict]:
         try:
             return self._acces().lister()
@@ -509,6 +521,7 @@ class Etat:
             "messagerie": self.messagerie.vue(),
             "acces": self.acces(),
             "regles": self.regles(),
+            "fiche": self.fiche(),
             "version": self.version,
             "compte": (self.compte() or {}).get("identifiant"),
             "maj": self.maj_disponible(),
@@ -651,6 +664,14 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 etat._acces()
                 from agent import regles
                 regles.ecrire(str(c.get("texte", "")))
+            elif chemin == "/api/fiche":
+                etat._acces()
+                from agent import fiche
+                fiche.ecrire(dict(c.get("reponses") or {}))
+            elif chemin == "/api/procedure/supprimer":
+                etat._acces()
+                from agent import fiche
+                fiche.supprimer_procedure(str(c.get("nom", "")))
             elif chemin == "/api/maj":
                 contenu = base64.b64decode(c["contenu"]) if c.get("contenu") else None
                 return {"version": etat.mettre_a_jour(contenu, self.server)}

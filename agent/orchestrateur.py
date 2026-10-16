@@ -117,13 +117,29 @@ def cout(modele: str, usage: Any) -> float:
             + n("cache_read_input_tokens") * lecture + n("output_tokens") * sortie) / 1e6
 
 
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def aujourdhui() -> str:
+    """Date du jour en toutes lettres (sans l'heure : le début du prompt reste en cache toute la journée)."""
+    from datetime import date
+    d = date.today()
+    return f"{JOURS[d.weekday()]} {d.day} {MOIS[d.month - 1]} {d.year}"
+
+
 def systeme() -> str:
     try:
         from .regles import lire
         regles = lire().strip()
     except Exception:
         regles = ""
-    texte = SYSTEME + sites_connus()
+    texte = f"Nous sommes le {aujourdhui()}.\n" + SYSTEME + sites_connus()
+    try:
+        from . import fiche
+        texte += "\n\n" + fiche.connaissances() + "\n\n" + fiche.texte_prompt()
+    except Exception:
+        pass
     if nom := prenom():
         texte = f"Tu t'appelles {nom} : c'est ton prénom auprès de l'équipe.\n" + texte
     if not regles:

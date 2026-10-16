@@ -25,7 +25,7 @@ import httpx
 from ordonnance.destination import Destination, LogicielNonConfigure, tracer
 
 from .connecteurs_mcp import ConnecteursMCP
-from . import regles
+from . import fiche, regles
 from .acces import dossier_donnees
 from .membres import Registre
 from .navigateur import Navigateur, outils_navigateur
@@ -106,6 +106,14 @@ class Pont:
         outils["retenir_regle"] = Outil(
             "retenir_regle", "Ajoute une règle de fonctionnement du magasin, que tu appliqueras à toutes les demandes suivantes. "
             "Une ligne, sans nom ni donnée de patient.", {"regle": {"type": "string"}}, True, regles.ajouter)
+        outils["completer_fiche"] = Outil(
+            "completer_fiche", "Complète la fiche du magasin (questionnaire) avec une réponse donnée par l'équipe. "
+            "question : identifiant de la question (ex. 'portails', 'equipe') ; reponse : une ou deux lignes, sans donnée de patient.",
+            {"question": {"type": "string"}, "reponse": {"type": "string"}}, True, fiche.completer)
+        outils["retenir_procedure"] = Outil(
+            "retenir_procedure", "Retient les étapes exactes d'une tâche réussie sur un site (écrans, champs, boutons), pour la "
+            "refaire sans chercher. nom : ex. 'MyEasyOptic : créer une fiche client'. Aucune donnée de client.",
+            {"nom": {"type": "string"}, "etapes": {"type": "string"}}, True, fiche.retenir_procedure)
         if chat_id is not None:
             outils["ajouter_tache"] = Outil(
                 "ajouter_tache", "Met une tâche dans la file : elle sera traitée seule, après la demande en cours. "

@@ -79,6 +79,18 @@
   label.case { display: flex; gap: 10px; align-items: center; cursor: pointer; margin-top: 6px; }
   input[type=checkbox] { accent-color: var(--encre); width: 16px; height: 16px; }
   .cache { display: none !important; }
+  .fiche-barre { margin: 14px 0 6px; }
+  .fiche-theme { font: 500 12px var(--corps); letter-spacing: .14em; text-transform: uppercase; color: var(--laiton); margin: 22px 0 4px; }
+  .fiche-q { display: block; margin: 12px 0 0; }
+  .fiche-q span { display: block; font-weight: 500; margin-bottom: 5px; }
+  .fiche-q textarea { width: 100%; min-height: 44px; resize: vertical; }
+  .fiche-q.repondue span::after { content: " ✓"; color: var(--vert); }
+  .proc { border: 1px solid var(--bord); border-radius: 12px; padding: 10px 14px; margin-top: 8px; background: #fff; }
+  .proc b { display: flex; align-items: center; gap: 8px; color: var(--texte); }
+  .proc b button { margin-left: auto; padding: 4px 10px; font-size: 12px; }
+  .proc pre { background: none; padding: 0; border: 0; }
+  .proc pre, pre.savoir { white-space: pre-wrap; font: 13px/1.55 var(--corps); margin: 6px 0 0; color: var(--texte); }
+  pre.savoir { max-height: 360px; overflow: auto; background: #fff; border: 1px solid var(--bord); border-radius: 12px; padding: 12px 14px; }
   /* Dictée : un seul contrôle de hauteur fixe ; le bouton micro ne bouge jamais, il devient « stop » pendant l'enregistrement. */
   .dictee { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 6px 0 0; border-radius: 99px;
     border: 1px solid transparent; transition: background .2s, border-color .2s; }
@@ -316,6 +328,22 @@
     </div>
   </section>
 
+  <section class="carte">
+    <div class="titre"><span class="num" id="n8">8</span><h2>Questionnaire du magasin</h2><span class="etat" id="e8"></span></div>
+    <div class="corps">
+      <p class="petit">Plus l'agent connaît votre magasin, moins il pose de questions. Répondez à ce que vous pouvez, en une ou deux lignes ; il demandera le reste sur Telegram au fil des tâches et complétera ce questionnaire après votre accord. Aucune donnée de patient ici.</p>
+      <div class="barre fiche-barre"><div id="fiche-progres"></div></div>
+      <div id="fiche-questions"></div>
+      <div class="ligne" style="margin-top:12px"><button id="b-fiche" style="margin-left:auto">Enregistrer le questionnaire</button></div>
+      <div class="msg" id="m8"></div>
+      <details><summary id="proc-titre">Procédures apprises par l'agent</summary>
+        <p class="petit">Quand l'agent réussit une tâche sur un site, il propose d'en retenir les étapes exactes ; il les suit ensuite sans chercher. Supprimez une procédure si elle n'est plus bonne.</p>
+        <div id="proc-liste"></div></details>
+      <details><summary>Ce que l'agent sait déjà (réglementation optique, MyEasyOptic)</summary>
+        <pre class="savoir" id="savoir"></pre></details>
+    </div>
+  </section>
+
   <section class="carte agent">
     <img class="portrait cache" id="portrait" alt="">
     <h2 style="margin:0;font-size:18px" id="agent-titre">Agent arrêté</h2>
@@ -438,6 +466,7 @@ function afficher(e) {
   $("p-compte").textContent = e.compte ? "Compte « " + e.compte + " » enregistré : les nouvelles versions arrivent toutes seules. Pour changer de compte, saisissez-en un autre."
     : "Avec le compte Optizien du magasin, les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »).";
   if (e.maj) $("maj-version").textContent = "(" + e.maj.version + ")";
+  if (e.fiche) afficherFiche(e.fiche);
   fait(7, !e.regles.vide, e.regles.vide ? "À compléter" : "Enregistrées");
   if (!reglesTouchees && document.activeElement !== $("i-regles")) $("i-regles").value = e.regles.texte;
   const g = e.messagerie.gmail, o = e.messagerie.outlook;
@@ -681,6 +710,44 @@ $("b-dicter").onclick = async () => {
   debutDictee = Date.now(); bip(880);
   $("chrono").textContent = "0:00"; etatDictee("actif"); afficherOnde(flux);
   msg("m7r", "", "");
+};
+// Questionnaire du magasin (carte 8)
+let ficheTouchee = false;
+function afficherFiche(f) {
+  const total = f.questions.length, faites = f.questions.filter(q => q.reponse).length;
+  fait(8, total && faites === total, total ? faites + " / " + total + " réponses" : "");
+  $("fiche-progres").style.width = (total ? 100 * faites / total : 0) + "%";
+  if (!ficheTouchee && !$("fiche-questions").contains(document.activeElement)) {
+    let html = "", theme = "";
+    for (const q of f.questions) {
+      if (q.theme !== theme) { theme = q.theme; html += '<div class="fiche-theme">' + echapper(theme) + '</div>'; }
+      html += '<label class="fiche-q' + (q.reponse ? ' repondue' : '') + '"><span>' + echapper(q.question) + '</span>' +
+        '<textarea rows="1" data-id="' + q.id + '" placeholder="' + echapper(q.exemple ? "Ex. : " + q.exemple : "") + '">' +
+        echapper(q.reponse) + '</textarea></label>';
+    }
+    $("fiche-questions").innerHTML = html;
+    $("fiche-questions").querySelectorAll("textarea").forEach(t => { t.oninput = () => { ficheTouchee = true; ajuster(t); }; ajuster(t); });
+  }
+  $("proc-titre").textContent = "Procédures apprises par l'agent (" + f.procedures.length + ")";
+  const liste = f.procedures.map((p, i) => '<div class="proc"><b>' + echapper(p.nom) +
+    '<button class="second" data-proc="' + i + '">Supprimer</button></b><pre>' + echapper(p.etapes) + '</pre></div>').join("");
+  if ($("proc-liste").dataset.html !== liste) {
+    $("proc-liste").dataset.html = liste;
+    $("proc-liste").innerHTML = liste || '<p class="petit">Aucune pour l\'instant.</p>';
+    $("proc-liste").querySelectorAll("[data-proc]").forEach(b => b.onclick = () => {
+      const nom = f.procedures[+b.dataset.proc].nom;
+      action(b, "m8", () => api("/api/procedure/supprimer", {nom}), () => "Procédure supprimée.");
+    });
+  }
+  if ($("savoir").textContent !== f.reglementation) $("savoir").textContent = f.reglementation;
+}
+function ajuster(t) { t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; }
+function echapper(x) { return String(x || "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c])); }
+$("b-fiche").onclick = () => {
+  const reponses = {};
+  $("fiche-questions").querySelectorAll("textarea").forEach(t => { reponses[t.dataset.id] = t.value; });
+  action($("b-fiche"), "m8", () => api("/api/fiche", {reponses}),
+    () => { ficheTouchee = false; return "Questionnaire enregistré : l'agent s'en sert dès la prochaine demande."; });
 };
 $("b-regles").onclick = () => action($("b-regles"), "m7r", () => api("/api/regles", {texte: $("i-regles").value}),
   () => { reglesTouchees = false; return "Règles enregistrées : l'agent les applique dès la prochaine demande."; });
