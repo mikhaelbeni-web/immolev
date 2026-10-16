@@ -545,6 +545,8 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
         def do_GET(self):
             if self.path.split("?")[0] == "/":
                 return self._envoyer(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            if self.path == "/logo":
+                return self._envoyer(200, Path(__file__).with_name("logo.svg").read_bytes(), "image/svg+xml")
             if self.path == "/icone":
                 return self._envoyer(200, ICONE.read_bytes(), "image/x-icon") if ICONE.exists() else self._json(404, {})
             if self.path.startswith("/avatar/"):  # images publiques du panneau (pas de secret)

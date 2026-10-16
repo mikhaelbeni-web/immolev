@@ -1,3 +1,56 @@
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:760px;margin:0 auto;padding:32px 16px;line-height:1.6;color:#1b2430;background:#fff}
-h1{font-size:28px;margin-bottom:4px}h2{font-size:19px;margin-top:28px}a{color:#2456d6}.date{color:#667;font-size:14px}nav a{margin-right:16px}
-.visages{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin:12px 0 24px}.visages figure{margin:0;text-align:center;font-weight:600;font-size:14px}.visages img{width:96px;height:96px;border-radius:50%;display:block;margin:0 auto 4px}
+/* Optizien Eyewear : noir, ivoire, laiton. Titres Cormorant Garamond, texte Inter. */
+:root{--encre:#16130f;--ivoire:#f6f3ee;--carte:#fffdfa;--laiton:#a8834a;--laiton-clair:#d9c29a;--doux:#6f675c;--bord:#e6dfd4;
+  --titre:"Cormorant Garamond",Georgia,"Times New Roman",serif;--corps:Inter,"Segoe UI",system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ivoire);color:var(--encre);font:16px/1.65 var(--corps);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.entete{position:sticky;top:0;z-index:5;background:rgba(22,19,15,.96);backdrop-filter:blur(8px);color:var(--ivoire)}
+.entete .cadre{display:flex;align-items:center;gap:24px;padding:16px 20px;max-width:1120px;margin:0 auto}
+.entete img{height:26px;display:block}
+.entete nav{margin-left:auto;display:flex;gap:22px;align-items:center;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.entete nav a{text-decoration:none;color:#cfc4b2}
+.entete nav a:hover{color:var(--ivoire)}
+.bouton{display:inline-block;text-decoration:none;font:500 13px var(--corps);letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;border-radius:99px;background:var(--laiton);color:var(--encre)!important;border:1px solid var(--laiton);transition:background .15s}
+.bouton:hover{background:#bf9a5e}
+.bouton.contour{background:transparent;color:var(--ivoire)!important;border-color:#5a5146}
+.bouton.contour:hover{border-color:var(--laiton)}
+.entete .bouton{padding:9px 18px;white-space:nowrap}
+.heros{background:var(--encre);color:var(--ivoire);padding:96px 20px 112px;text-align:center;position:relative;overflow:hidden}
+.heros::after{content:"";position:absolute;inset:auto -10% -60% -10%;height:80%;background:radial-gradient(closest-side,rgba(168,131,74,.22),transparent);pointer-events:none}
+.surtitre{font:500 12px var(--corps);letter-spacing:.24em;text-transform:uppercase;color:var(--laiton)}
+.heros h1{font:500 clamp(40px,7vw,76px)/1.04 var(--titre);margin:18px auto 22px;max-width:880px;letter-spacing:-.01em}
+.heros h1 em{color:var(--laiton-clair);font-style:italic}
+.heros p{max-width:620px;margin:0 auto 34px;color:#cfc4b2;font-size:18px}
+.heros .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
+.bloc{max-width:1120px;margin:0 auto;padding:88px 20px}
+.bloc h2{font:500 clamp(30px,4.5vw,46px)/1.1 var(--titre);margin:10px 0 18px}
+.bloc .intro{color:var(--doux);max-width:640px;font-size:17px}
+.grille{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-top:40px}
+.case{background:var(--carte);border:1px solid var(--bord);border-radius:20px;padding:28px}
+.case .n{font:500 34px var(--titre);color:var(--laiton)}
+.case h3{font:600 23px/1.2 var(--titre);margin:8px 0 8px}
+.case p{margin:0;color:var(--doux);font-size:15px}
+.sombre{background:var(--encre);color:var(--ivoire)}
+.sombre .intro{color:#cfc4b2}
+.visages{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:24px;margin-top:40px}
+.visages figure{margin:0;text-align:center}
+.visages img{width:150px;height:150px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px;border:2px solid var(--laiton)}
+.visages figcaption{font:500 24px var(--titre)}
+.engagements{list-style:none;padding:0;margin:36px 0 0;display:grid;gap:14px;max-width:760px}
+.engagements li{padding:18px 22px;border:1px solid var(--bord);border-radius:16px;background:var(--carte)}
+.engagements b{font:600 20px var(--titre);display:block}
+.pied{border-top:1px solid #2c2720;background:var(--encre);color:#9d9282;font-size:14px}
+.pied .cadre{max-width:1120px;margin:0 auto;padding:36px 20px;display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+.pied img{height:20px}
+.pied nav{margin-left:auto;display:flex;gap:18px;flex-wrap:wrap}
+.pied a{text-decoration:none}.pied a:hover{color:var(--ivoire)}
+/* pages de texte (conditions, confidentialité, téléchargement) */
+.doc{max-width:760px;margin:0 auto;padding:64px 20px 88px}
+.doc h1{font:500 clamp(36px,5vw,54px)/1.1 var(--titre);margin:8px 0 6px}
+.doc h2{font:600 26px/1.2 var(--titre);margin:36px 0 8px}
+.doc .date{color:var(--doux);font-size:14px}
+.doc li{margin:6px 0}
+.doc a{color:var(--laiton)}
+.encadre{background:var(--carte);border:1px solid var(--bord);border-radius:20px;padding:28px;margin:28px 0}
+@media (max-width:640px){.entete nav a:not(.bouton){display:none}.entete .bouton{padding:8px 14px;font-size:11px}.entete img{height:22px}.heros{padding:72px 16px 84px}.bloc{padding:64px 16px}}

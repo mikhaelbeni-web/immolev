@@ -5,97 +5,114 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Optizien</title>
 <link rel="icon" href="/icone">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Identité Optizien Eyewear : noir, ivoire, laiton. Titres en Cormorant, texte en Inter. */
   :root {
-    --fond: #f4f6f9; --carte: #ffffff; --texte: #1d2433; --doux: #5d6b82; --bord: #e2e7ef;
-    --bleu: #1f5eff; --bleu-doux: #e8efff; --vert: #12805c; --vert-doux: #e3f5ee;
-    --orange: #b45309; --orange-doux: #fdf1e2; --rouge: #c0362c; --rouge-doux: #fde8e6;
+    --fond: #f6f3ee; --carte: #fffdfa; --texte: #16130f; --doux: #6f675c; --bord: #e6dfd4;
+    --encre: #16130f; --laiton: #a8834a; --laiton-doux: #f3ebdd;
+    --bleu: #16130f; --bleu-doux: #f1ece3;
+    --vert: #2f6b4f; --vert-doux: #e6f0ea; --orange: #9a5b13; --orange-doux: #f8eedf; --rouge: #a3352b; --rouge-doux: #f8e6e3;
+    --titre: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    --corps: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--fond); color: var(--texte);
-         font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
-  header { background: var(--carte); border-bottom: 1px solid var(--bord); padding: 18px 28px;
-           display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 2; }
-  header img { width: 36px; height: 36px; }
-  header h1 { font-size: 20px; margin: 0; font-weight: 600; }
-  header .sous { color: var(--doux); font-size: 13px; }
-  .pastille { margin-left: auto; padding: 6px 14px; border-radius: 99px; font-weight: 600; font-size: 13px; }
-  .pastille.on { background: var(--vert-doux); color: var(--vert); }
-  .pastille.off { background: #eef1f5; color: var(--doux); }
-  main { max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
-  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
-  .titre { display: flex; align-items: center; gap: 12px; }
-  .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
-         background: var(--bleu-doux); color: var(--bleu); flex: none; font-size: 14px; }
-  .num.ok { background: var(--vert); color: #fff; }
-  .titre h2 { font-size: 16px; margin: 0; font-weight: 600; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.55 var(--corps); -webkit-font-smoothing: antialiased; }
+  header { background: var(--encre); color: #f6f3ee; padding: 16px 28px; display: flex; align-items: center; gap: 16px;
+           position: sticky; top: 0; z-index: 2; }
+  header .logo { height: 30px; width: auto; display: block; }
+  header h1 { position: absolute; left: -9999px; }
+  header .sous { color: #b9ae9c; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-top: 2px; }
+  header button.second { background: transparent; color: #f6f3ee; border: 1px solid #4a4339; }
+  header button.second:hover { border-color: var(--laiton); }
+  .pastille { margin-left: auto; padding: 6px 14px; border-radius: 99px; font-weight: 500; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  .pastille.on { background: #24382d; color: #9fd7b7; }
+  .pastille.off { background: #2a2620; color: #b9ae9c; }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 20px 72px; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 18px; padding: 22px 24px; margin-bottom: 16px;
+           box-shadow: 0 1px 0 rgba(22,19,15,.03); }
+  .titre { display: flex; align-items: center; gap: 14px; }
+  .num { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: 500 13px var(--corps);
+         border: 1px solid var(--laiton); color: var(--laiton); flex: none; }
+  .num.ok { background: var(--encre); border-color: var(--encre); color: #f6f3ee; }
+  .titre h2, .carte > h2 { font: 600 22px/1.2 var(--titre); margin: 0; letter-spacing: .01em; }
   .titre .etat { margin-left: auto; font-size: 13px; color: var(--doux); text-align: right; }
-  .corps { margin: 14px 0 0 42px; }
+  .corps { margin: 14px 0 0 46px; }
   .ligne { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  input[type=password], input[type=text] { flex: 1; min-width: 220px; padding: 10px 12px; border: 1px solid var(--bord);
-         border-radius: 9px; font: inherit; background: #fbfcfe; }
-  input:focus { outline: 2px solid var(--bleu); outline-offset: -1px; }
-  button { font: inherit; font-weight: 600; border: 0; border-radius: 9px; padding: 10px 16px; cursor: pointer;
-           background: var(--bleu); color: #fff; }
-  button.second { background: #eef1f5; color: var(--texte); }
-  button.danger { background: var(--rouge-doux); color: var(--rouge); }
-  button.grand { padding: 14px 26px; font-size: 16px; }
-  button:disabled { opacity: .5; cursor: default; }
-  .msg { margin-top: 10px; padding: 9px 12px; border-radius: 9px; font-size: 14px; }
+  input[type=password], input[type=text] { flex: 1; min-width: 220px; padding: 11px 13px; border: 1px solid var(--bord);
+         border-radius: 10px; font: inherit; background: #fff; color: var(--texte); }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--laiton); outline-offset: -1px; }
+  button { font: 500 14px var(--corps); letter-spacing: .02em; border: 1px solid var(--encre); border-radius: 10px; padding: 10px 18px; cursor: pointer;
+           background: var(--encre); color: #f6f3ee; transition: background .15s, border-color .15s, color .15s; }
+  button:hover:not(:disabled) { background: #2c2720; }
+  button.second { background: transparent; color: var(--texte); border-color: var(--bord); }
+  button.second:hover:not(:disabled) { border-color: var(--encre); background: transparent; }
+  button.danger { background: var(--rouge-doux); color: var(--rouge); border-color: transparent; }
+  button.danger:hover:not(:disabled) { background: #f2d7d2; }
+  button.grand { padding: 15px 30px; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; border-radius: 99px; }
+  button:disabled { opacity: .45; cursor: default; }
+  .msg { margin-top: 10px; padding: 10px 13px; border-radius: 10px; font-size: 14px; }
   .msg.ok { background: var(--vert-doux); color: var(--vert); }
   .msg.err { background: var(--rouge-doux); color: var(--rouge); }
   .msg.att { background: var(--orange-doux); color: var(--orange); }
   .msg:empty { display: none; }
   details { margin-top: 10px; color: var(--doux); font-size: 14px; }
-  summary { cursor: pointer; color: var(--bleu); }
+  summary { cursor: pointer; color: var(--laiton); font-weight: 500; }
   details ol { margin: 8px 0 0; padding-left: 20px; }
-  code { background: #eef1f5; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
-  .barre { height: 10px; background: #eef1f5; border-radius: 99px; overflow: hidden; margin: 12px 0 6px; }
-  .barre div { height: 100%; background: var(--bleu); width: 0; transition: width .4s; }
+  code { background: var(--bleu-doux); padding: 1px 6px; border-radius: 5px; font-size: 13px; }
+  .barre { height: 6px; background: var(--bleu-doux); border-radius: 99px; overflow: hidden; margin: 12px 0 6px; }
+  .barre div { height: 100%; background: var(--laiton); width: 0; transition: width .4s; }
   .petit { font-size: 13px; color: var(--doux); }
   table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  td { padding: 8px 4px; border-top: 1px solid var(--bord); }
+  td { padding: 9px 4px; border-top: 1px solid var(--bord); }
   td:last-child { text-align: right; }
-  .agent { text-align: center; padding: 28px 22px; }
-  .agent p { color: var(--doux); margin: 6px 0 16px; }
-  pre { background: #0f1522; color: #d6deeb; border-radius: 10px; padding: 12px; max-height: 260px; overflow: auto;
+  .agent { text-align: center; padding: 34px 24px; background: var(--encre); color: #f6f3ee; border-color: var(--encre); }
+  .agent h2 { color: #f6f3ee; font-size: 28px !important; }
+  .agent p { color: #b9ae9c; margin: 6px 0 18px; }
+  .agent button.grand { background: var(--laiton); border-color: var(--laiton); color: var(--encre); }
+  .agent button.grand:hover:not(:disabled) { background: #bf9a5e; }
+  .agent button.grand.danger { background: transparent; color: #f2b8b0; border-color: #6b3a33; }
+  .agent summary { color: #d9c29a; }
+  pre { background: #0c0a08; color: #e8dfcf; border-radius: 12px; padding: 12px; max-height: 260px; overflow: auto;
         font-size: 12px; white-space: pre-wrap; text-align: left; }
   label.case { display: flex; gap: 10px; align-items: center; cursor: pointer; margin-top: 6px; }
+  input[type=checkbox] { accent-color: var(--encre); width: 16px; height: 16px; }
   .cache { display: none !important; }
-  .dictee { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 14px; border-radius: 10px;
-    background: #fdecec; color: #b42318; font-weight: 600; flex-wrap: wrap; }
+  .dictee { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 14px; border-radius: 12px;
+    background: #fbeceb; color: #a3352b; font-weight: 600; flex-wrap: wrap; }
   .dictee canvas { max-width: 100%; }
   .dictee .point { width: 12px; height: 12px; border-radius: 50%; background: #e5372b; animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: .25; } }
-  .fournisseurs { display: grid; gap: 10px; max-width: 420px; margin: 12px 0; }
+  .fournisseurs { display: grid; gap: 10px; max-width: 440px; margin: 12px 0; }
   .fournisseur { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: var(--texte);
-    border: 1px solid var(--bord); border-radius: 99px; padding: 13px 18px; font-size: 15px; font-weight: 600; }
-  .fournisseur:hover:not(:disabled) { background: #f6f8fb; }
-  .encart { margin-top: 12px; padding: 14px; border: 1px solid var(--bord); border-radius: 10px; }
-  .bandeau { border-color: var(--bleu); background: var(--bleu-doux); }
-  textarea { width: 100%; padding: 12px; border: 1px solid var(--bord); border-radius: 9px; font: 14px/1.5 Consolas, "Segoe UI", monospace; background: #fbfcfe; resize: vertical; }
-  select.champ { padding: 10px 12px; border: 1px solid var(--bord); border-radius: 9px; font: inherit; background: #fbfcfe; }
-  .sous-titre { font-size: 14px; margin: 14px 0 4px; color: var(--doux); text-transform: uppercase; letter-spacing: .04em; }
+    border: 1px solid var(--bord); border-radius: 99px; padding: 13px 18px; font-size: 15px; font-weight: 500; }
+  .fournisseur:hover:not(:disabled) { background: #fff; border-color: var(--encre); }
+  .encart { margin-top: 12px; padding: 16px; border: 1px solid var(--bord); border-radius: 12px; background: #fff; }
+  .bandeau { border-color: var(--laiton); background: var(--laiton-doux); }
+  textarea { width: 100%; padding: 13px; border: 1px solid var(--bord); border-radius: 12px; font: 14px/1.55 var(--corps); background: #fff; color: var(--texte); resize: vertical; }
+  select.champ { padding: 11px 13px; border: 1px solid var(--bord); border-radius: 10px; font: inherit; background: #fff; color: var(--texte); }
+  .sous-titre { font: 500 12px var(--corps); margin: 20px 0 6px; color: var(--laiton); text-transform: uppercase; letter-spacing: .14em; }
   .sous-titre:first-child { margin-top: 0; }
-  .code { margin-top: 10px; padding: 14px; border-radius: 10px; background: var(--bleu-doux); color: var(--texte); }
-  .code b { display: block; font-size: 30px; letter-spacing: .15em; margin: 6px 0; color: var(--bleu); font-family: Consolas, monospace; }
-  .visages { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; margin: 12px 0; }
-  .visage { background: #fff; color: var(--texte); border: 2px solid var(--bord); border-radius: 14px; padding: 8px 6px 6px;
-    display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 600; font-size: 13px; }
-  .visage img { width: 84px; height: 84px; border-radius: 50%; }
-  .visage:hover { border-color: #b9c6dc; }
-  .visage.choisi { border-color: var(--bleu); background: var(--bleu-doux); }
+  .code { margin-top: 10px; padding: 16px; border-radius: 12px; background: var(--bleu-doux); color: var(--texte); }
+  .code b { display: block; font-size: 30px; letter-spacing: .15em; margin: 6px 0; color: var(--encre); font-family: Consolas, monospace; }
+  .visages { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; margin: 14px 0; }
+  .visage { background: #fff; color: var(--texte); border: 1px solid var(--bord); border-radius: 16px; padding: 10px 6px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; font: 600 17px var(--titre); }
+  .visage img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; }
+  .visage:hover:not(:disabled) { border-color: var(--laiton); background: #fff; }
+  .visage.choisi { border: 2px solid var(--laiton); background: var(--laiton-doux); }
   .filtres { display: flex; gap: 6px; }
-  .filtres button { padding: 6px 12px; font-size: 13px; }
-  .filtres button.actif { background: var(--bleu); color: #fff; }
-  .portrait { width: 64px; height: 64px; border-radius: 50%; display: block; margin: 0 auto 8px; }
+  .filtres button { padding: 6px 14px; font-size: 13px; border-radius: 99px; }
+  .filtres button.actif { background: var(--encre); color: #f6f3ee; border-color: var(--encre); }
+  .portrait { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 12px; border: 2px solid var(--laiton); }
+  @media (max-width: 640px) { .corps { margin-left: 0; } header { padding: 14px 16px; flex-wrap: wrap; } main { padding: 20px 14px 60px; } }
 </style>
 </head>
 <body>
 <header>
-  <img src="/icone" alt="">
-  <div><h1>Optizien</h1><div class="sous">Agent du magasin · version <span id="version"></span></div></div>
-  <button class="second" id="b-actualiser" style="margin-left:auto">🔄 Actualiser</button>
+  <div><img class="logo" src="/logo" alt="Optizien"><h1>Optizien</h1><div class="sous">Agent du magasin · version <span id="version"></span></div></div>
+  <button class="second" id="b-actualiser" style="margin-left:auto">Actualiser</button>
   <span id="pastille" class="pastille off" style="margin-left:0">Agent arrêté</span>
 </header>
 <main>
