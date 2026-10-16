@@ -27,7 +27,7 @@ from pathlib import Path
 
 import base64
 
-from . import maj, systeme
+from . import maj, systeme, visage
 from .messagerie import Messagerie
 
 APP = Path(__file__).resolve().parent.parent
@@ -492,6 +492,7 @@ class Etat:
             "maj": self.maj_disponible(),
             "agent": self.agent(),
             "options": self.options(),
+            "visage": {"choix": visage.lire(DONNEES), "liste": visage.liste()},
         }
 
 
@@ -522,6 +523,9 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 return self._envoyer(200, PAGE.read_bytes(), "text/html; charset=utf-8")
             if self.path == "/icone":
                 return self._envoyer(200, ICONE.read_bytes(), "image/x-icon") if ICONE.exists() else self._json(404, {})
+            if self.path.startswith("/avatar/"):  # images publiques du panneau (pas de secret)
+                img = visage.image(self.path.split("/")[-1].split("?")[0])
+                return self._envoyer(200, img, "image/jpeg") if img else self._json(404, {})
             if self.path == "/api/vivant":
                 return self._json(200, {"ok": True})
             if not self._autorise():
@@ -566,6 +570,13 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                     raise ValueError(verif["message"])
                 ecrire_secret("TELEGRAM_TOKEN", jeton_bot)
                 etat.verif_bot = verif
+                choix = visage.lire(DONNEES)
+                if choix:  # visage choisi avant le bot : on le pose maintenant
+                    threading.Thread(target=visage.choisir, args=(DONNEES, choix["id"], choix["nom"], jeton_bot),
+                                     daemon=True).start()
+            elif chemin == "/api/visage":
+                rep = visage.choisir(DONNEES, str(c.get("id", "")), str(c.get("nom", "")), lire_secret("TELEGRAM_TOKEN"))
+                return rep  # l'agent relit son prénom à chaque demande
             elif chemin == "/api/membres/chercher":
                 return {"expediteurs": etat.chercher_expediteurs()}
             elif chemin == "/api/membres/demande":

@@ -1,0 +1,52 @@
+[
+ {
+  "id": "lea",
+  "nom": "Léa",
+  "genre": "f"
+ },
+ {
+  "id": "ines",
+  "nom": "Inès",
+  "genre": "f"
+ },
+ {
+  "id": "maya",
+  "nom": "Maya",
+  "genre": "f"
+ },
+ {
+  "id": "chloe",
+  "nom": "Chloé",
+  "genre": "f"
+ },
+ {
+  "id": "sofia",
+  "nom": "Sofia",
+  "genre": "f"
+ },
+ {
+  "id": "hugo",
+  "nom": "Hugo",
+  "genre": "m"
+ },
+ {
+  "id": "adam",
+  "nom": "Adam",
+  "genre": "m"
+ },
+ {
+  "id": "noah",
+  "nom": "Noah",
+  "genre": "m"
+ },
+ {
+  "id": "lucas",
+  "nom": "Lucas",
+  "genre": "m"
+ },
+ {
+  "id": "theo",
+  "nom": "Théo",
+  "genre": "m"
+ }
+]

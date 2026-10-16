@@ -325,7 +325,10 @@ class Pont:
         if choix == "membre_ok":
             self._envoyer(chat, f"{demande['nom']} est autorisé(e).")
             try:
-                self._envoyer(int(ident), "Accès accepté : vous pouvez m'écrire.")
+                from .orchestrateur import prenom
+                nom = prenom()
+                self._envoyer(int(ident), f"Accès accepté. Ici {nom}, l'agent Optizien du magasin : vous pouvez m'écrire."
+                              if nom else "Accès accepté : vous pouvez m'écrire.")
             except Exception:
                 pass
         else:

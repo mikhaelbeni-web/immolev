@@ -60,6 +60,15 @@ def sites_connus() -> str:
             "et se connecte ; ne demande jamais l'adresse ni le lien à l'équipe) :\n" + lignes)
 
 
+def prenom() -> str:
+    """Prénom choisi dans le panneau (carte « Visage de l'agent »), vide sinon."""
+    try:
+        from .acces import dossier_donnees
+        return json.loads((dossier_donnees() / "visage.json").read_text(encoding="utf-8")).get("nom", "")
+    except (OSError, ValueError):
+        return ""
+
+
 def systeme() -> str:
     try:
         from .regles import lire
@@ -67,6 +76,8 @@ def systeme() -> str:
     except Exception:
         regles = ""
     texte = SYSTEME + sites_connus()
+    if nom := prenom():
+        texte = f"Tu t'appelles {nom} : c'est ton prénom auprès de l'équipe.\n" + texte
     if not regles:
         return texte
     return texte + "\n\nRègles du magasin, écrites par l'opticien (elles priment sur tes habitudes ; les lignes « (ex.) » sont des exemples à ignorer) :\n" + regles

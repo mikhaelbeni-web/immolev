@@ -79,6 +79,16 @@
   .sous-titre:first-child { margin-top: 0; }
   .code { margin-top: 10px; padding: 14px; border-radius: 10px; background: var(--bleu-doux); color: var(--texte); }
   .code b { display: block; font-size: 30px; letter-spacing: .15em; margin: 6px 0; color: var(--bleu); font-family: Consolas, monospace; }
+  .visages { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; margin: 12px 0; }
+  .visage { background: #fff; color: var(--texte); border: 2px solid var(--bord); border-radius: 14px; padding: 8px 6px 6px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 600; font-size: 13px; }
+  .visage img { width: 84px; height: 84px; border-radius: 50%; }
+  .visage:hover { border-color: #b9c6dc; }
+  .visage.choisi { border-color: var(--bleu); background: var(--bleu-doux); }
+  .filtres { display: flex; gap: 6px; }
+  .filtres button { padding: 6px 12px; font-size: 13px; }
+  .filtres button.actif { background: var(--bleu); color: #fff; }
+  .portrait { width: 64px; height: 64px; border-radius: 50%; display: block; margin: 0 auto 8px; }
 </style>
 </head>
 <body>
@@ -137,6 +147,24 @@
         <li>Envoyez <code>/setprivacy</code> à @BotFather, choisissez le bot, puis <b>Disable</b>.</li>
         <li>Ajoutez le bot au groupe du magasin.</li>
       </ol></details>
+    </div>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><h2>Visage de l'agent</h2><span class="etat" id="e-visage"></span></div>
+    <div class="corps" style="margin-left:0">
+      <p class="petit" style="margin:0">Choisissez la tête et le prénom de votre agent. Ils deviennent sa photo et son nom dans Telegram.</p>
+      <div class="filtres" style="margin-top:10px">
+        <button class="second actif" data-filtre="">Tous</button>
+        <button class="second" data-filtre="f">Femmes</button>
+        <button class="second" data-filtre="m">Hommes</button>
+      </div>
+      <div class="visages" id="visages"></div>
+      <div class="ligne">
+        <input type="text" id="i-prenom" placeholder="Prénom de l'agent" maxlength="40" autocomplete="off">
+        <button id="b-visage">Choisir ce visage</button>
+      </div>
+      <div class="msg" id="m-visage"></div>
     </div>
   </section>
 
@@ -248,6 +276,7 @@
   </section>
 
   <section class="carte agent">
+    <img class="portrait cache" id="portrait" alt="">
     <h2 style="margin:0;font-size:18px" id="agent-titre">Agent arrêté</h2>
     <p id="agent-texte">Une fois démarré, un Chrome dédié s'ouvre. L'agent s'y connecte seul aux sites de la rubrique Accès.</p>
     <button class="grand" id="b-demarrer">Démarrer l'agent</button>
@@ -304,6 +333,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 
 function afficher(e) {
   etat = e;
+  if (e.visage) afficherVisages(e.visage);
   const c = e.composants;
   fait(1, c.ok, c.ok ? "Installés" : (c.en_cours ? "Installation…" : "À installer"));
   $("b-installer").classList.toggle("cache", c.ok || c.en_cours);
@@ -389,6 +419,42 @@ function afficher(e) {
   if (a.arret_inattendu && !$("m6").dataset.local) { msg("m6", "L'agent s'est arrêté tout seul : ouvrez le journal ci-dessous.", "err"); $("d-journal").open = true; }
   $("c-demarrage").checked = e.options.demarrage;
 }
+
+// visage de l'agent ----------------------------------------------------------
+let visageSel = null, filtreVisage = "", prenomTouche = false;
+function afficherVisages(v) {
+  const choix = v.choix || {};
+  if (visageSel === null) visageSel = choix.id || "";
+  $("visages").innerHTML = v.liste.filter(a => !filtreVisage || a.genre === filtreVisage).map(a =>
+    `<button class="visage ${a.id === visageSel ? "choisi" : ""}" data-visage="${esc(a.id)}" data-prenom="${esc(a.nom)}">
+       <img src="/avatar/${esc(a.id)}" alt="">${esc(a.nom)}</button>`).join("");
+  if (!prenomTouche && document.activeElement !== $("i-prenom")) $("i-prenom").value = choix.nom || "";
+  $("e-visage").textContent = choix.nom ? "Actuel : " + choix.nom : "";
+  $("portrait").classList.toggle("cache", !choix.id);
+  if (choix.id) $("portrait").src = "/avatar/" + choix.id;
+}
+document.addEventListener("click", ev => {
+  const f = ev.target.closest("[data-filtre]");
+  if (f) {
+    filtreVisage = f.dataset.filtre;
+    document.querySelectorAll("[data-filtre]").forEach(b => b.classList.toggle("actif", b === f));
+    if (etat) afficherVisages(etat.visage);
+  }
+  const c = ev.target.closest("[data-visage]");
+  if (c) {
+    visageSel = c.dataset.visage;
+    $("i-prenom").value = c.dataset.prenom; prenomTouche = true;
+    if (etat) afficherVisages(etat.visage);
+  }
+});
+$("i-prenom").oninput = () => { prenomTouche = true; };
+$("b-visage").onclick = () => {
+  if (!visageSel) return msg("m-visage", "Cliquez d'abord sur un visage.", "att");
+  action($("b-visage"), "m-visage", async () => {
+    const r = await api("/api/visage", {id: visageSel, nom: $("i-prenom").value});
+    prenomTouche = false; return r;
+  }, r => r.message);
+};
 
 async function rafraichir() {
   try { afficher(await api("/api/etat")); } catch (e) {}
