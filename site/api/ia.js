@@ -1,7 +1,7 @@
 // Passerelle Claude d'Optizien.
 // Le logiciel des magasins appelle ce serveur avec le compte Optizien du magasin (en-tête x-api-key = "identifiant:motdepasse").
 // La clé Anthropic n'existe qu'ici : variable d'environnement Vercel ANTHROPIC_API_KEY (et ANTHROPIC_WORKSPACE_ID si la clé est multi-espaces). Aucun magasin ne la voit.
-//   POST /api/ia/v1/messages  -> transmis à Anthropic (modèles autorisés seulement)
+//   POST /api/ia/v1/messages  -> (réécrit en /api/ia?c=v1/messages) transmis à Anthropic (modèles autorisés seulement)
 //   GET  /api/ia/ping         -> {"ok":true,"cle":true|false} : le compte est accepté, le serveur a-t-il sa clé ?
 // Comptes : variable OPTIZIEN_COMPTES = "identifiant:sha256(identifiant:motdepasse);…" (la même que pour /telecharger).
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -43,7 +43,11 @@ async function lire(req) {
 }
 
 export default async function handler(req, res) {
-  const chemin = new URL(req.url, 'http://x').pathname.replace(/^\/api\/ia/, '').replace(/\/$/, '');
+  // vercel.json réécrit /api/ia/<chemin> vers /api/ia?c=<chemin> : le chemin voulu est dans le paramètre « c ».
+  const url = new URL(req.url, 'http://x');
+  const demande = url.searchParams.get('c');
+  const chemin = demande !== null ? '/' + demande.replace(/^\/+|\/+$/g, '') : url.pathname.replace(/^\/api\/ia/, '').replace(/\/$/, '');
+  url.searchParams.delete('c');
   const id = compte(req);
   if (!id) return erreur(res, 401, 'authentication_error', "Compte Optizien refusé : vérifiez l'identifiant et le mot de passe.");
 
@@ -66,7 +70,7 @@ export default async function handler(req, res) {
   if (req.headers['anthropic-beta']) entetes['anthropic-beta'] = String(req.headers['anthropic-beta']);
   let amont;
   try {
-    amont = await fetch(`${AMONT()}/v1/messages${new URL(req.url, 'http://x').search}`, { method: 'POST', headers: entetes, body: corps });
+    amont = await fetch(`${AMONT()}/v1/messages${url.search}`, { method: 'POST', headers: entetes, body: corps });
   } catch (e) {
     console.log(JSON.stringify({ compte: id, modele, statut: 'injoignable' }));
     return erreur(res, 502, 'api_error', "Claude est injoignable depuis le serveur Optizien.");
