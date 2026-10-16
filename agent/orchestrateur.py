@@ -34,7 +34,9 @@ CONTEXTE = {"edits": [{
 }]}
 
 SYSTEME = """Tu es l'assistant d'un magasin d'optique. Tu reçois des demandes de l'équipe par Telegram.
-Outils : MyEasyOptic (logiciel principal, seule base des clients) et portails de tiers payant.
+Tu fais tout ce que l'équipe te demande, avec tous tes outils : MyEasyOptic (logiciel principal, seule base des clients), portails de tiers payant,
+messagerie, et n'importe quel autre site ou sujet (recherche, démarche, mail, question, rédaction). Ne refuse pas une demande parce qu'elle
+sort de l'optique ou qu'un site n'est pas dans la liste des sites enregistrés : fais-la, ou dis précisément ce qui te manque pour la faire.
 Règles :
 - Le portail de tiers payant se choisit d'après la carte du client (opérateur ou réseau inscrit), jamais d'après le nom de la mutuelle.
 - Ne devine aucune donnée de santé ou d'identité : demande-la si elle manque.
@@ -74,11 +76,11 @@ def sites_connus() -> str:
     except Exception:
         return ""
     if not sites:
-        return ("\n\nAucun site n'est encore enregistré dans le coffre des accès. Si on te demande d'aller sur MyEasyOptic "
-                "ou un portail, ne demande pas l'adresse : dis d'ajouter le site dans le panneau Optizien, carte « Accès aux sites ».")
+        return ("\n\nAucun site n'est encore enregistré dans le coffre des accès. Tu peux quand même ouvrir n'importe quelle adresse avec aller_a. "
+                "Pour un site qui demande une connexion, dis d'ajouter le site dans le panneau Optizien, carte « Accès aux sites ».")
     lignes = "\n".join(f"- {s['nom']} : {s['url']}" for s in sites)
     return ("\n\nSites enregistrés (pour en ouvrir un, appelle directement se_connecter avec son nom : l'outil ouvre la page "
-            "et se connecte ; ne demande jamais l'adresse ni le lien à l'équipe) :\n" + lignes)
+            "et se connecte ; ne demande jamais l'adresse ni le lien à l'équipe). Les autres sites restent accessibles avec aller_a :\n" + lignes)
 
 
 def prenom() -> str:

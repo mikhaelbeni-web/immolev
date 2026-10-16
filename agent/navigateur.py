@@ -304,7 +304,7 @@ def outils_navigateur(nav: Navigateur) -> dict[str, Outil]:
         Outil("lire_page", "Lit la page affichée dans Chrome : URL, champs avec leurs valeurs, boutons, liens, texte.", {}, False, nav.lire_page),
         Outil("chercher_dans_page", "Cherche un mot dans la page affichée (éléments et lignes de texte) sans tout relire : moins cher que lire_page sur une longue page.",
               {"texte": {"type": "string"}}, False, nav.chercher_dans_page),
-        Outil("aller_a", "Ouvre une adresse dans Chrome (MyEasyOptic, portail de tiers payant, messagerie).",
+        Outil("aller_a", "Ouvre n'importe quelle adresse dans Chrome (MyEasyOptic, portail de tiers payant, messagerie, tout autre site).",
               {"url": {"type": "string"}}, False, nav.aller_a),
         Outil("suivre_lien", "Clique sur un lien ou un onglet pour naviguer. Refusé sur un bouton.", ref, False, nav.suivre_lien),
         Outil("remplir_champ", "Remplit un champ, une liste ou une case de la page (non enregistré tant qu'aucun bouton n'est cliqué). Jamais de mot de passe.",
