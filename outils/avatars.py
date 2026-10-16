@@ -1,6 +1,7 @@
 """Dessine les visages d'agent proposés dans le panneau (SVG + JPG pour la photo du bot Telegram).
 
-Usage (sur le poste de développement, Playwright requis) : python outils/avatars.py
+Style « personnage 3D » : grosse tête, grands yeux brillants, volumes en dégradés et ombres douces.
+Usage (poste de développement, Playwright requis) : CHROMIUM=<chemin> python outils/avatars.py
 Sortie : panneau/avatars/<id>.svg et <id>.jpg, plus panneau/avatars/liste.json.
 """
 from __future__ import annotations
@@ -11,104 +12,143 @@ from pathlib import Path
 
 SORTIE = Path(__file__).resolve().parent.parent / "panneau" / "avatars"
 
-PEAUX = {"claire": ("#f6d3b8", "#e8b896"), "doree": ("#e6b48a", "#d29a6c"),
-         "mate": ("#c98e62", "#b2774c"), "foncee": ("#8d5a3b", "#76482c")}
+# clair, moyen, ombre
+PEAUX = {"claire": ("#ffe3cf", "#f5c4a1", "#d99670"), "doree": ("#f6cfa6", "#e3a877", "#b9784c"),
+         "mate": ("#e2ad80", "#c98a5b", "#9a5f37"), "foncee": ("#a8704a", "#8a5634", "#5e3620")}
 
-# id, prénom proposé, genre, peau, cheveux (style, couleur), vêtement, fond (2 couleurs), lunettes
+# id, prénom, genre, peau, (coiffure, couleur), haut, fond, yeux, lunettes (couleur de monture ou None)
 PROFILS = [
-    ("lea", "Léa", "f", "claire", ("long", "#6b4226"), "#1f3b73", ("#7dd3fc", "#6366f1"), False),
-    ("ines", "Inès", "f", "doree", ("chignon", "#2b1d16"), "#0f766e", ("#99f6e4", "#0ea5e9"), True),
-    ("maya", "Maya", "f", "foncee", ("boucles", "#1c1410"), "#7c2d12", ("#fde68a", "#f472b6"), False),
-    ("chloe", "Chloé", "f", "claire", ("carre", "#d9a441"), "#4c1d95", ("#c4b5fd", "#22d3ee"), True),
-    ("sofia", "Sofia", "f", "mate", ("long", "#2a1a12"), "#9f1239", ("#fecdd3", "#a78bfa"), False),
-    ("hugo", "Hugo", "m", "claire", ("court", "#5a3a22"), "#1e3a8a", ("#93c5fd", "#14b8a6"), False),
-    ("adam", "Adam", "m", "doree", ("houppe", "#1f1610"), "#111827", ("#a5b4fc", "#38bdf8"), True),
-    ("noah", "Noah", "m", "foncee", ("frise", "#120c09"), "#065f46", ("#6ee7b7", "#3b82f6"), False),
-    ("lucas", "Lucas", "m", "mate", ("barbe", "#3b2416"), "#334155", ("#fcd34d", "#fb7185"), True),
-    ("theo", "Théo", "m", "claire", ("houppe", "#b7792f"), "#0c4a6e", ("#67e8f9", "#818cf8"), False),
+    ("lea", "Léa", "f", "claire", ("long", "#7a4a2a"), "#ffffff", "#ffd6e0", "#3b82f6", None),
+    ("ines", "Inès", "f", "doree", ("chignon", "#3a2418"), "#1e3a5f", "#c7f0e8", "#5b3a1e", "#c2410c"),
+    ("maya", "Maya", "f", "foncee", ("boucles", "#231710"), "#f59e0b", "#e9d5ff", "#4a2a14", None),
+    ("chloe", "Chloé", "f", "claire", ("carre", "#e0b04f"), "#7c3aed", "#cfe8ff", "#16a34a", "#1f2937"),
+    ("sofia", "Sofia", "f", "mate", ("long", "#2c1a10"), "#e11d48", "#fff1c2", "#5b3a1e", None),
+    ("hugo", "Hugo", "m", "claire", ("court", "#6b4428"), "#2563eb", "#ffe4c7", "#2f80d1", None),
+    ("adam", "Adam", "m", "doree", ("houppe", "#22170f"), "#ffffff", "#dbeafe", "#4a2a14", "#111827"),
+    ("noah", "Noah", "m", "foncee", ("frise", "#140d08"), "#0f766e", "#fde2c4", "#3b2312", None),
+    ("lucas", "Lucas", "m", "mate", ("barbe", "#3f2617"), "#334155", "#d1fae5", "#5b3a1e", "#7c2d12"),
+    ("theo", "Théo", "m", "claire", ("houppe", "#c98a3c"), "#16a34a", "#e0e7ff", "#3a8a5c", None),
 ]
 
+# Les coiffures sont dessinées pour une tête (256,238) rx88 ry104, puis agrandies vers la tête 3D.
+AGRANDIR = 'transform="translate(256 232) scale(1.36 1.24) translate(-256 -238)"'
 
-def _cheveux_arriere(style: str, c: str) -> str:
+
+def _cheveux_arriere(style: str) -> str:
     if style == "long":
-        return f'<path fill="{c}" d="M150 250C138 118 210 98 256 98C302 98 374 118 362 250L376 430C330 452 182 452 136 430Z"/>'
+        return '<path d="M150 250C138 118 210 98 256 98C302 98 374 118 362 250L372 400C330 420 182 420 140 400Z"/>'
     if style == "carre":
-        return f'<path fill="{c}" d="M150 236C144 118 214 98 256 98C298 98 368 118 362 236L364 334C330 352 182 352 148 334Z"/>'
+        return '<path d="M150 236C144 118 214 98 256 98C298 98 368 118 362 236L362 318C330 336 182 336 150 318Z"/>'
     if style == "chignon":
-        return f'<circle cx="256" cy="98" r="44" fill="{c}"/>'
+        return '<circle cx="256" cy="92" r="42"/>'
     if style == "boucles":
-        bulles = [(256, 104), (210, 112), (302, 112), (174, 140), (338, 140), (158, 184), (354, 184),
-                  (152, 232), (360, 232), (156, 280), (356, 280), (166, 322), (346, 322)]
-        return "".join(f'<circle cx="{x}" cy="{y}" r="40" fill="{c}"/>' for x, y in bulles)
+        bulles = [(256, 104), (210, 110), (302, 110), (172, 138), (340, 138), (156, 182), (356, 182),
+                  (150, 228), (362, 228), (154, 272), (358, 272), (166, 308), (346, 308)]
+        return "".join(f'<circle cx="{x}" cy="{y}" r="38"/>' for x, y in bulles)
     return ""
 
 
-def _cheveux_avant(style: str, c: str) -> str:
+def _cheveux_avant(style: str) -> str:
     formes = {
-        "long": "M164 236C158 140 218 108 262 110C322 112 358 152 350 238C330 182 292 160 240 168C208 174 180 202 164 236Z",
-        "carre": "M164 214C168 134 220 106 256 106C302 106 346 134 348 214C318 186 198 186 164 214Z",
-        "chignon": "M166 232C160 140 214 112 256 112C300 112 352 140 346 232C332 172 298 150 256 150C214 150 180 172 166 232Z",
-        "boucles": "M166 220C164 150 210 118 256 118C302 118 348 150 346 220C326 176 296 162 256 162C216 162 186 176 166 220Z",
-        "court": "M168 222C158 138 210 108 256 108C306 108 354 138 344 222C336 180 316 158 256 156C196 158 176 180 168 222Z",
-        "houppe": "M168 224C156 148 200 96 266 92C326 90 360 140 344 224C330 170 300 156 250 160C200 164 178 186 168 224Z",
-        "frise": "M170 214C166 140 214 114 256 114C300 114 348 140 342 214C330 176 300 164 256 164C212 164 182 176 170 214Z",
-        "barbe": "M168 222C158 138 210 108 256 108C306 108 354 138 344 222C336 180 316 158 256 156C196 158 176 180 168 222Z",
+        "long": "M162 240C154 138 218 104 262 106C324 108 362 150 352 242C334 178 294 156 240 164C206 170 178 200 162 240Z",
+        "carre": "M162 218C166 130 220 102 256 102C304 102 348 130 350 218C320 184 196 184 162 218Z",
+        "chignon": "M164 232C158 138 214 108 256 108C302 108 354 138 348 232C334 168 298 146 256 146C214 146 178 168 164 232Z",
+        "boucles": "M164 222C162 148 210 114 256 114C302 114 350 148 348 222C326 172 296 158 256 158C216 158 186 172 164 222Z",
+        "court": "M166 226C154 134 210 102 256 102C308 102 358 134 346 226C338 178 316 154 256 152C196 154 174 178 166 226Z",
+        "houppe": "M166 228C152 146 198 88 268 84C330 82 364 136 346 228C330 166 300 152 250 156C198 160 176 184 166 228Z",
+        "frise": "M168 218C164 136 214 108 256 108C300 108 350 136 344 218C330 172 300 160 256 160C212 160 182 172 168 218Z",
+        "barbe": "M166 226C154 134 210 102 256 102C308 102 358 134 346 226C338 178 316 154 256 152C196 154 174 178 166 226Z",
     }
-    s = f'<path fill="{c}" d="{formes[style]}"/>'
-    if style == "frise":
-        s += "".join(f'<circle cx="{x}" cy="{y}" r="16" fill="{c}"/>'
-                     for x, y in [(188, 150), (216, 128), (248, 120), (280, 122), (310, 132), (332, 154), (200, 176), (320, 176)])
-    if style == "barbe":
-        s += (f'<path fill="{c}" d="M174 252C176 334 214 352 256 352C298 352 336 334 338 252'
-              f'C326 296 302 310 256 312C210 310 186 296 174 252Z"/>')
+    s = f'<path d="{formes[style]}"/>'
+    if style in ("boucles", "frise"):
+        s += "".join(f'<circle cx="{x}" cy="{y}" r="15"/>'
+                     for x, y in [(186, 148), (214, 124), (248, 116), (282, 118), (312, 128), (334, 152), (198, 176), (322, 176)])
     return s
 
 
+def _reflet(style: str) -> str:
+    """Mèche de lumière sur le dessus des cheveux (volume)."""
+    if style in ("boucles", "frise"):
+        return '<ellipse cx="236" cy="122" rx="40" ry="12" transform="rotate(-12 236 122)"/>'
+    return '<path d="M200 138C222 118 258 112 292 118C262 122 232 130 206 150Z"/>'
+
+
 def svg(p) -> str:
-    _id, _nom, genre, peau, (style, ch), habit, (f1, f2), lunettes = p
-    clair, ombre = PEAUX[peau]
-    levres = "#c0605a" if genre == "f" else ombre
-    cils = ('<path d="M206 238l-8-5M300 238l8-5" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>'
-            if genre == "f" else "")
-    verres = ('<g fill="#ffffff22" stroke="#111827" stroke-width="5"><rect x="190" y="222" width="62" height="48" rx="18"/>'
-              '<rect x="260" y="222" width="62" height="48" rx="18"/></g>'
-              '<path d="M252 242q4-5 8 0" stroke="#111827" stroke-width="5" fill="none"/>' if lunettes else "")
+    ident, _nom, genre, peau, (style, ch), haut, fond, yeux, lunettes = p
+    clair, moyen, ombre = PEAUX[peau]
+    f = genre == "f"
+    cils = ('<path d="M174 236q-10-6-14-14M180 228q-8-8-10-16M338 236q10-6 14-14M332 228q8-8 10-16" '
+            'stroke="#1b1210" stroke-width="5" stroke-linecap="round" fill="none"/>') if f else ""
+    monture = ""
+    if lunettes:
+        monture = (f'<g fill="#ffffff" fill-opacity=".12" stroke="{lunettes}" stroke-width="9" stroke-linejoin="round">'
+                   '<rect x="150" y="212" width="94" height="76" rx="30"/><rect x="268" y="212" width="94" height="76" rx="30"/></g>'
+                   f'<path d="M244 240q12-12 24 0" stroke="{lunettes}" stroke-width="8" fill="none"/>'
+                   '<path d="M164 222l20-6M282 222l20-6" stroke="#ffffff" stroke-opacity=".7" stroke-width="5" stroke-linecap="round"/>')
+    barbe = ""
+    if style == "barbe":
+        barbe = (f'<path fill="{ch}" d="M148 262C150 352 200 372 256 372C312 372 362 352 364 262'
+                 'C346 318 316 336 256 338C196 336 166 318 148 262Z"/>'
+                 f'<path fill="{ch}" d="M210 316q46-18 92 0q-10 10-46 8q-36 2-46-8Z"/>')
+    levres = "#c2414b" if f else "#9b3b3b"
+    oeil = lambda cx: (  # noqa: E731
+        f'<ellipse cx="{cx}" cy="250" rx="27" ry="31" fill="#ffffff"/>'
+        f'<circle cx="{cx + 2}" cy="254" r="21" fill="url(#iris)"/>'
+        f'<circle cx="{cx + 2}" cy="254" r="10" fill="#0b0b0f"/>'
+        f'<circle cx="{cx + 10}" cy="244" r="7" fill="#ffffff"/><circle cx="{cx - 6}" cy="264" r="3.5" fill="#ffffff" fill-opacity=".8"/>'
+        f'<path d="M{cx - 30} 242q30-30 60 0" stroke="#1b1210" stroke-width="{7 if f else 5}" fill="none" stroke-linecap="round"/>')
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
 <defs>
-<linearGradient id="fond" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{f1}"/><stop offset="1" stop-color="{f2}"/></linearGradient>
-<radialGradient id="halo" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#ffffff" stop-opacity=".55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
-<linearGradient id="habit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{habit}"/><stop offset="1" stop-color="#0b1020"/></linearGradient>
+<radialGradient id="fond" cx=".5" cy=".38" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="{fond}"/><stop offset="1" stop-color="{fond}" stop-opacity=".85"/></radialGradient>
+<radialGradient id="peau" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="{clair}"/><stop offset=".6" stop-color="{moyen}"/><stop offset="1" stop-color="{ombre}"/></radialGradient>
+<radialGradient id="iris" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#ffffff" stop-opacity=".5"/><stop offset=".25" stop-color="{yeux}"/><stop offset="1" stop-color="#0d0d14"/></radialGradient>
+<linearGradient id="cheveux" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{ch}" stop-opacity=".82"/><stop offset=".35" stop-color="{ch}"/><stop offset="1" stop-color="#000000" stop-opacity=".9"/></linearGradient>
+<linearGradient id="haut" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{haut}"/><stop offset="1" stop-color="{haut}" stop-opacity=".75"/></linearGradient>
+<filter id="flou" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
+<filter id="flou2" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>
+<filter id="portee" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity=".22"/></filter>
+<clipPath id="tete"><ellipse cx="256" cy="232" rx="120" ry="128"/></clipPath>
 </defs>
+<rect width="512" height="512" fill="{fond}"/>
 <rect width="512" height="512" fill="url(#fond)"/>
-<circle cx="256" cy="220" r="230" fill="url(#halo)"/>
-<g stroke="#ffffff" stroke-opacity=".25" stroke-width="2" fill="none">
-<path d="M40 120h60l20 20h40M472 380h-60l-20-20h-40M60 420h50M430 90h-40"/>
+<g filter="url(#portee)">
+<g fill="url(#cheveux)" {AGRANDIR}>{_cheveux_arriere(style)}</g>
+<path fill="url(#haut)" d="M96 512C100 430 160 392 256 392C352 392 412 430 416 512Z"/>
+<path fill="#000000" fill-opacity=".12" d="M150 512C160 470 190 440 230 430L256 470L282 430C322 440 352 470 362 512Z"/>
+<path fill="{moyen}" d="M214 340h84v52q-42 40-84 0Z"/>
+<path fill="{ombre}" fill-opacity=".55" d="M214 352q42 26 84 0v-12h-84Z" filter="url(#flou2)"/>
+<path fill="#ffffff" fill-opacity="{'.95' if haut != '#ffffff' else '.0'}" d="M206 392l50 46l50-46l-14-8l-36 30l-36-30Z"/>
+<ellipse cx="136" cy="250" rx="20" ry="30" fill="{moyen}"/><ellipse cx="376" cy="250" rx="20" ry="30" fill="{moyen}"/>
+<ellipse cx="256" cy="232" rx="120" ry="128" fill="url(#peau)"/>
 </g>
-<g fill="#ffffff" fill-opacity=".6"><circle cx="160" cy="140" r="4"/><circle cx="350" cy="360" r="4"/><circle cx="110" cy="420" r="4"/><circle cx="390" cy="90" r="4"/></g>
-{_cheveux_arriere(style, ch)}
-<path fill="url(#habit)" d="M90 512C104 404 176 372 256 372C336 372 408 404 422 512Z"/>
-<path fill="#ffffff" fill-opacity=".9" d="M226 376L256 420L286 376Z"/>
-<rect x="226" y="300" width="60" height="86" rx="24" fill="{ombre}"/>
-<ellipse cx="170" cy="250" rx="15" ry="24" fill="{ombre}"/><ellipse cx="342" cy="250" rx="15" ry="24" fill="{ombre}"/>
-<ellipse cx="256" cy="238" rx="88" ry="104" fill="{clair}"/>
-{_cheveux_avant(style, ch)}
-<path d="M200 212q22-12 42-2M270 210q20-10 42 2" stroke="{ch}" stroke-width="7" stroke-linecap="round" fill="none"/>
-<ellipse cx="222" cy="248" rx="10" ry="12" fill="#1f2937"/><ellipse cx="290" cy="248" rx="10" ry="12" fill="#1f2937"/>
-<circle cx="226" cy="243" r="4" fill="#ffffff"/><circle cx="294" cy="243" r="4" fill="#ffffff"/>
+<g clip-path="url(#tete)">
+<ellipse cx="256" cy="372" rx="130" ry="40" fill="{ombre}" fill-opacity=".45" filter="url(#flou)"/>
+<ellipse cx="224" cy="168" rx="70" ry="40" fill="#ffffff" fill-opacity=".28" filter="url(#flou)"/>
+<g fill="{ombre}" fill-opacity=".45" filter="url(#flou)" {AGRANDIR}>{_cheveux_avant(style)}</g>
+</g>
+<ellipse cx="180" cy="296" rx="26" ry="15" fill="#ff6b81" fill-opacity=".35" filter="url(#flou2)"/>
+<ellipse cx="332" cy="296" rx="26" ry="15" fill="#ff6b81" fill-opacity=".35" filter="url(#flou2)"/>
+{oeil(194)}{oeil(318)}
 {cils}
-<path d="M256 258q-8 26 0 30q6 2 10-2" stroke="{ombre}" stroke-width="5" stroke-linecap="round" fill="none"/>
-<ellipse cx="204" cy="284" rx="16" ry="9" fill="#f43f5e" fill-opacity=".14"/><ellipse cx="308" cy="284" rx="16" ry="9" fill="#f43f5e" fill-opacity=".14"/>
-<path d="M232 306q24 20 48 0" stroke="{levres}" stroke-width="7" stroke-linecap="round" fill="none"/>
-{verres}
-<g><rect x="330" y="236" width="22" height="34" rx="10" fill="#0f172a"/><circle cx="341" cy="253" r="6" fill="#22d3ee"/>
-<circle cx="341" cy="253" r="14" fill="#22d3ee" fill-opacity=".25"/>
-<path d="M341 270q0 40-58 52" stroke="#0f172a" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="283" cy="322" r="5" fill="#0f172a"/></g>
+<path d="M164 {204 if f else 202}q30-{16 if f else 12} 60-2M288 {202 if f else 200}q30-{14 if f else 10} 60 {4 if f else 2}" stroke="{ch}" stroke-width="{8 if f else 11}" stroke-linecap="round" fill="none"/>
+<ellipse cx="256" cy="292" rx="16" ry="12" fill="{ombre}" fill-opacity=".55" filter="url(#flou2)"/>
+<ellipse cx="252" cy="286" rx="7" ry="5" fill="#ffffff" fill-opacity=".55"/>
+{barbe}
+<path d="M218 318q38 34 76 0q-2 6-6 12q-32 26-64 0q-4-6-6-12Z" fill="#5a1620"/>
+<path d="M224 320q32 10 64 0l-3 8q-29 8-58 0Z" fill="#ffffff"/>
+<path d="M234 336q22 12 44 0q-22-8-44 0Z" fill="#e0525f"/>
+<path d="M214 316q42 40 84 0" stroke="{levres}" stroke-width="4" fill="none" stroke-linecap="round"/>
+<g fill="url(#cheveux)" {AGRANDIR}>{_cheveux_avant(style)}</g>
+<g fill="#ffffff" fill-opacity=".28" filter="url(#flou2)" {AGRANDIR}>{_reflet(style)}</g>
+{monture}
 </svg>'''
 
 
 def main() -> None:
     from playwright.sync_api import sync_playwright
     SORTIE.mkdir(parents=True, exist_ok=True)
+    for vieux in SORTIE.glob("*.*"):
+        vieux.unlink()
     liste = []
     with sync_playwright() as pw:
         nav = pw.chromium.launch(executable_path=os.environ.get("CHROMIUM") or None)

@@ -20,7 +20,13 @@ def liste() -> list[dict]:
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else []
 
 
-def image(ident: str) -> bytes | None:
+PERSO = "perso"  # image importée par le magasin : <données>/visage-perso.jpg
+
+
+def image(ident: str, donnees: Path | None = None) -> bytes | None:
+    if ident == PERSO and donnees is not None:
+        f = donnees / "visage-perso.jpg"
+        return f.read_bytes() if f.exists() else None
     if not any(a["id"] == ident for a in liste()):
         return None
     f = AVATARS / f"{ident}.jpg"
@@ -64,11 +70,22 @@ def _nom_bot(jeton: str, nom: str) -> dict:
     return _telegram(jeton, "setMyName", corps, "application/x-www-form-urlencoded")
 
 
+def importer(donnees: Path, jpg: bytes) -> None:
+    """Image du magasin (déjà recadrée en carré JPEG par le panneau)."""
+    if jpg[:2] != b"\xff\xd8" or len(jpg) > 5_000_000:
+        raise ValueError("Image refusée : il faut une photo JPEG de moins de 5 Mo.")
+    donnees.mkdir(parents=True, exist_ok=True)
+    (donnees / "visage-perso.jpg").write_bytes(jpg)
+
+
 def choisir(donnees: Path, ident: str, nom: str, jeton: str | None) -> dict:
-    jpg = image(ident)
+    jpg = image(ident, donnees)
     if jpg is None:
         raise ValueError("Visage inconnu.")
-    nom = " ".join((nom or "").split())[:40] or next(a["nom"] for a in liste() if a["id"] == ident)
+    defaut = next((a["nom"] for a in liste() if a["id"] == ident), "")
+    nom = " ".join((nom or "").split())[:40] or defaut
+    if not nom:
+        raise ValueError("Donnez un prénom à l'agent.")
     donnees.mkdir(parents=True, exist_ok=True)
     (donnees / "visage.json").write_text(json.dumps({"id": ident, "nom": nom}, ensure_ascii=False), encoding="utf-8")
     if not jeton:

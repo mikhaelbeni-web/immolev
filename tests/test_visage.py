@@ -29,3 +29,14 @@ def test_prenom_dans_le_prompt(tmp_path, monkeypatch):
     (tmp_path / "visage.json").write_text('{"id": "lea", "nom": "Léa"}', encoding="utf-8")
     from agent import orchestrateur
     assert orchestrateur.systeme().startswith("Tu t'appelles Léa")
+
+
+def test_image_perso(tmp_path):
+    import pytest
+    with pytest.raises(ValueError):
+        visage.importer(tmp_path, b"pas une image")
+    visage.importer(tmp_path, b"\xff\xd8\xff\xe0fin")
+    assert visage.image("perso", tmp_path) == b"\xff\xd8\xff\xe0fin"
+    with pytest.raises(ValueError):
+        visage.choisir(tmp_path, "perso", "", None)
+    assert visage.choisir(tmp_path, "perso", "Zoé", None)["ok"]

@@ -492,7 +492,8 @@ class Etat:
             "maj": self.maj_disponible(),
             "agent": self.agent(),
             "options": self.options(),
-            "visage": {"choix": visage.lire(DONNEES), "liste": visage.liste()},
+            "visage": {"choix": visage.lire(DONNEES), "liste": visage.liste(),
+                       "perso": (DONNEES / "visage-perso.jpg").exists()},
         }
 
 
@@ -524,7 +525,7 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
             if self.path == "/icone":
                 return self._envoyer(200, ICONE.read_bytes(), "image/x-icon") if ICONE.exists() else self._json(404, {})
             if self.path.startswith("/avatar/"):  # images publiques du panneau (pas de secret)
-                img = visage.image(self.path.split("/")[-1].split("?")[0])
+                img = visage.image(self.path.split("/")[-1].split("?")[0], DONNEES)
                 return self._envoyer(200, img, "image/jpeg") if img else self._json(404, {})
             if self.path == "/api/vivant":
                 return self._json(200, {"ok": True})
@@ -574,6 +575,8 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 if choix:  # visage choisi avant le bot : on le pose maintenant
                     threading.Thread(target=visage.choisir, args=(DONNEES, choix["id"], choix["nom"], jeton_bot),
                                      daemon=True).start()
+            elif chemin == "/api/visage/importer":
+                visage.importer(DONNEES, base64.b64decode(str(c.get("image", "")).split(",")[-1]))
             elif chemin == "/api/visage":
                 rep = visage.choisir(DONNEES, str(c.get("id", "")), str(c.get("nom", "")), lire_secret("TELEGRAM_TOKEN"))
                 return rep  # l'agent relit son prénom à chaque demande

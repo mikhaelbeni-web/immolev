@@ -160,6 +160,8 @@
         <button class="second" data-filtre="m">Hommes</button>
       </div>
       <div class="visages" id="visages"></div>
+      <div class="ligne" style="margin-bottom:10px"><label class="petit" for="i-visage-perso">Ou votre propre image (photo, image créée avec une IA…) :</label>
+        <input type="file" id="i-visage-perso" accept="image/*"></div>
       <div class="ligne">
         <input type="text" id="i-prenom" placeholder="Prénom de l'agent" maxlength="40" autocomplete="off">
         <button id="b-visage">Choisir ce visage</button>
@@ -421,17 +423,18 @@ function afficher(e) {
 }
 
 // visage de l'agent ----------------------------------------------------------
-let visageSel = null, filtreVisage = "", prenomTouche = false;
+let visageSel = null, filtreVisage = "", prenomTouche = false, versionPerso = 0;
 function afficherVisages(v) {
   const choix = v.choix || {};
   if (visageSel === null) visageSel = choix.id || "";
-  $("visages").innerHTML = v.liste.filter(a => !filtreVisage || a.genre === filtreVisage).map(a =>
-    `<button class="visage ${a.id === visageSel ? "choisi" : ""}" data-visage="${esc(a.id)}" data-prenom="${esc(a.nom)}">
-       <img src="/avatar/${esc(a.id)}" alt="">${esc(a.nom)}</button>`).join("");
+  const tous = v.perso ? [{id: "perso", nom: "Mon image", genre: ""}, ...v.liste] : v.liste;
+  $("visages").innerHTML = tous.filter(a => !filtreVisage || a.genre === filtreVisage || a.id === "perso").map(a =>
+    `<button class="visage ${a.id === visageSel ? "choisi" : ""}" data-visage="${esc(a.id)}" data-prenom="${a.id === "perso" ? "" : esc(a.nom)}">
+       <img src="/avatar/${esc(a.id)}?${versionPerso}" alt="">${esc(a.nom)}</button>`).join("");
   if (!prenomTouche && document.activeElement !== $("i-prenom")) $("i-prenom").value = choix.nom || "";
   $("e-visage").textContent = choix.nom ? "Actuel : " + choix.nom : "";
   $("portrait").classList.toggle("cache", !choix.id);
-  if (choix.id) $("portrait").src = "/avatar/" + choix.id;
+  if (choix.id) $("portrait").src = "/avatar/" + choix.id + "?" + versionPerso;
 }
 document.addEventListener("click", ev => {
   const f = ev.target.closest("[data-filtre]");
@@ -448,6 +451,22 @@ document.addEventListener("click", ev => {
   }
 });
 $("i-prenom").oninput = () => { prenomTouche = true; };
+$("i-visage-perso").onchange = async ev => {
+  const fichier = ev.target.files[0]; if (!fichier) return;
+  msg("m-visage", "Préparation de l'image…", "att");
+  try {
+    const img = await createImageBitmap(fichier);
+    const cote = Math.min(img.width, img.height), toile = document.createElement("canvas");
+    toile.width = toile.height = 640;
+    toile.getContext("2d").drawImage(img, (img.width - cote) / 2, (img.height - cote) / 2, cote, cote, 0, 0, 640, 640);
+    await api("/api/visage/importer", {image: toile.toDataURL("image/jpeg", 0.9)});
+    versionPerso++; visageSel = "perso";
+    if (!$("i-prenom").value || !prenomTouche) { $("i-prenom").value = ""; }
+    msg("m-visage", "Image ajoutée. Donnez un prénom puis « Choisir ce visage ».", "ok");
+    await rafraichir();
+  } catch (e) { msg("m-visage", e.message || "Image illisible.", "err"); }
+  ev.target.value = "";
+};
 $("b-visage").onclick = () => {
   if (!visageSel) return msg("m-visage", "Cliquez d'abord sur un visage.", "att");
   action($("b-visage"), "m-visage", async () => {
