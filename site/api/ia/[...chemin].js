@@ -1,6 +1,6 @@
 // Passerelle Claude d'Optizien.
 // Le logiciel des magasins appelle ce serveur avec le compte Optizien du magasin (en-tête x-api-key = "identifiant:motdepasse").
-// La clé Anthropic n'existe qu'ici : variable d'environnement Vercel ANTHROPIC_API_KEY. Aucun magasin ne la voit.
+// La clé Anthropic n'existe qu'ici : variable d'environnement Vercel ANTHROPIC_API_KEY (et ANTHROPIC_WORKSPACE_ID si la clé est multi-espaces). Aucun magasin ne la voit.
 //   POST /api/ia/v1/messages  -> transmis à Anthropic (modèles autorisés seulement)
 //   GET  /api/ia/ping         -> {"ok":true,"cle":true|false} : le compte est accepté, le serveur a-t-il sa clé ?
 // Comptes : variable OPTIZIEN_COMPTES = "identifiant:sha256(identifiant:motdepasse);…" (la même que pour /telecharger).
@@ -59,7 +59,10 @@ export default async function handler(req, res) {
   if (!MODELES.has(modele)) return erreur(res, 403, 'permission_error', `Modèle non autorisé : ${modele || 'aucun'}.`);
 
   const debut = Date.now();
-  const entetes = { 'content-type': 'application/json', 'x-api-key': cle, 'anthropic-version': String(req.headers['anthropic-version'] || '2023-06-01') };
+  // Authorization: Bearer est l'en-tête documenté par Anthropic (valable pour tous les types de clé) ; ANTHROPIC_WORKSPACE_ID
+  // est nécessaire seulement avec une clé multi-espaces de travail (colonne « Organisation » de la console).
+  const entetes = { 'content-type': 'application/json', authorization: `Bearer ${cle}`, 'anthropic-version': String(req.headers['anthropic-version'] || '2023-06-01') };
+  if (process.env.ANTHROPIC_WORKSPACE_ID) entetes['anthropic-workspace-id'] = process.env.ANTHROPIC_WORKSPACE_ID;
   if (req.headers['anthropic-beta']) entetes['anthropic-beta'] = String(req.headers['anthropic-beta']);
   let amont;
   try {
