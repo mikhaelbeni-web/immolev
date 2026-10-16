@@ -149,6 +149,7 @@
 </style>
 </head>
 <body>
+<div id="coupure" class="msg err" hidden style="margin:0;border-radius:0;text-align:center;font-weight:600">Cette fenêtre n'est plus reliée à Optizien. Fermez-la, puis rouvrez Optizien avec « Ouvrir Optizien ».</div>
 <header>
   <div><img class="logo" src="/logo" alt="Optizien"><h1>Optizien</h1><div class="sous">Agent du magasin · version <span id="version"></span></div></div>
   <button class="second" id="b-actualiser" style="margin-left:auto">Actualiser</button>
@@ -387,11 +388,18 @@ const $ = id => document.getElementById(id);
 let etat = null, attenteGoogle = false, attenteMs = false;
 
 async function api(chemin, corps) {
-  const r = await fetch(chemin, {
-    method: corps === undefined ? "GET" : "POST",
-    headers: {"X-Optizien": JETON, "Content-Type": "application/json"},
-    body: corps === undefined ? undefined : JSON.stringify(corps),
-  });
+  let r;
+  try {
+    r = await fetch(chemin, {
+      method: corps === undefined ? "GET" : "POST",
+      headers: {"X-Optizien": JETON, "Content-Type": "application/json"},
+      body: corps === undefined ? undefined : JSON.stringify(corps),
+    });
+  } catch (e) {
+    $("coupure").hidden = false;
+    throw new Error("Cette fenêtre n'est plus reliée à Optizien. Fermez-la, puis rouvrez Optizien avec « Ouvrir Optizien ».");
+  }
+  $("coupure").hidden = true;
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.erreur || "Erreur " + r.status);
   return d;
