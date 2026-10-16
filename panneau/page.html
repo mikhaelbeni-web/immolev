@@ -81,7 +81,9 @@
   .cache { display: none !important; }
   .fiche-barre { margin: 14px 0 6px; }
   .fiche-theme { font: 500 12px var(--corps); letter-spacing: .14em; text-transform: uppercase; color: var(--laiton); margin: 22px 0 4px; }
-  .fiche-q { display: block; margin: 12px 0 0; }
+  .fiche-q { margin: 12px 0 0; }
+  .fiche-q label { display: block; }
+  .fiche-micro { height: 38px; margin-top: 6px; }
   .fiche-q span { display: block; font-weight: 500; margin-bottom: 5px; }
   .fiche-q textarea { width: 100%; min-height: 44px; resize: vertical; }
   .fiche-q.repondue span::after { content: " ✓"; color: var(--vert); }
@@ -108,11 +110,17 @@
   .dictee.actif .etiquette { display: none; }
   .dictee.actif .direct { display: inline-flex; }
   .dictee canvas { width: 96px; height: 24px; }
-  .dictee #chrono { font-variant-numeric: tabular-nums; color: var(--texte); min-width: 36px; }
   .dictee .annuler { width: 34px; height: 34px; padding: 0; border-radius: 50%; display: grid; place-items: center;
     background: transparent; color: var(--doux, #6f675c); border: 1px solid var(--bord); font-size: 15px; }
   .dictee .annuler:hover:not(:disabled) { background: var(--rouge-doux); color: var(--rouge); border-color: transparent; }
   .dictee.attente .rond svg { animation: tourne 1s linear infinite; }
+  .dictee.compact { height: 38px; }
+  .dictee.compact .rond { width: 38px; height: 38px; }
+  .dictee.compact .rond svg { width: 17px; height: 17px; }
+  .dictee.compact .etiquette { font-size: 13px; color: var(--doux); }
+  .dictee.compact .annuler { width: 30px; height: 30px; }
+  .dictee.compact canvas { height: 20px; }
+  .dictee .chrono { font-variant-numeric: tabular-nums; color: var(--texte); min-width: 36px; }
   @keyframes tourne { to { transform: rotate(360deg); } }
   @keyframes pulse { 50% { opacity: .25; } }
   .fournisseurs { display: grid; gap: 10px; max-width: 440px; margin: 12px 0; }
@@ -317,12 +325,7 @@
       <p class="petit">Tout ce que l'agent doit savoir pour éviter les questions : mutuelles et portails, habitudes de saisie, qui valide quoi… Remplacez les exemples « (ex.) ». Aucune donnée de patient ici. Sur Telegram, « retiens : … » ajoute une règle après confirmation.</p>
       <textarea id="i-regles" rows="14" spellcheck="true"></textarea>
       <div class="ligne" style="margin-top:10px">
-        <div class="dictee" id="dictee">
-          <button class="rond" id="b-dicter" title="Dicter" aria-label="Dicter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-          <span class="etiquette" id="dictee-etiquette">Dicter</span>
-          <span class="direct"><canvas id="onde" width="192" height="48"></canvas><span id="chrono">0:00</span>
-            <button class="annuler" id="b-annuler-dictee" title="Annuler (Échap)" aria-label="Annuler la dictée">✕</button></span>
-        </div>
+        <div id="dictee-regles"></div>
         <button id="b-regles" style="margin-left:auto">Enregistrer les règles</button></div>
       <div class="msg" id="m7r"></div>
     </div>
@@ -641,92 +644,120 @@ $("b-actualiser").onclick = async () => {
   setTimeout(() => { b.textContent = "🔄 Actualiser"; b.disabled = false; }, 2500);
 };
 $("i-regles").oninput = () => { reglesTouchees = true; };
-let dicteeAnnulee = false, enregistreur = null, audioCtx = null, animation = null, debutDictee = 0;
-const ICONE_MICRO = $("b-dicter").innerHTML, ICONE_STOP = '<svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></svg>', ICONE_ATTENTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>';
-function etatDictee(etat) {  // "repos" | "actif" | "attente"
-  const d = $("dictee"), b = $("b-dicter");
-  d.classList.toggle("actif", etat === "actif"); d.classList.toggle("attente", etat === "attente");
-  b.innerHTML = etat === "actif" ? ICONE_STOP : etat === "attente" ? ICONE_ATTENTE : ICONE_MICRO;
-  b.title = etat === "actif" ? "Terminer et transcrire" : "Dicter";
-  b.disabled = etat === "attente";
-  $("dictee-etiquette").textContent = etat === "attente" ? "Transcription…" : "Dicter";
-}
-function annulerDictee() { if (enregistreur) { dicteeAnnulee = true; enregistreur.stop(); } }
-$("b-annuler-dictee").onclick = annulerDictee;
-document.addEventListener("keydown", ev => { if (ev.key === "Escape" && enregistreur) annulerDictee(); });
+const SVG_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  SVG_STOP = '<svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></svg>',
+  SVG_ATTENTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>';
+let audioCtx = null, dicteeEnCours = null;
+const dictees = [];  // tous les boutons micro de la page : un seul enregistre à la fois, les autres sont grisés
+function verrouiller() { for (let i = dictees.length; i--;) { const d = dictees[i];
+  if (!d.hote.isConnected) { dictees.splice(i, 1); continue; } d.bloquer(dicteeEnCours && dicteeEnCours !== d); } }
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && dicteeEnCours) dicteeEnCours.annuler(); });
 function bip(freq) {
   try { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = freq; g.gain.value = 0.08;
         o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.12); } catch (e) {}
 }
-function afficherOnde(flux) {
-  const analyse = audioCtx.createAnalyser(); analyse.fftSize = 1024;
-  audioCtx.createMediaStreamSource(flux).connect(analyse);
-  const donnees = new Uint8Array(analyse.fftSize), c = $("onde"), g = c.getContext("2d"), barres = [];
-  let silence = 0, prevenu = false;
-  const dessiner = () => {
-    analyse.getByteTimeDomainData(donnees);
-    let somme = 0; for (const v of donnees) somme += (v - 128) ** 2;
-    const niveau = Math.min(1, Math.sqrt(somme / donnees.length) / 40);
-    barres.push(niveau); if (barres.length > 24) barres.shift();
-    g.clearRect(0, 0, c.width, c.height); g.fillStyle = "#d93a2e";
-    barres.forEach((b, i) => { const h = Math.max(4, b * c.height); const x = c.width - (barres.length - i) * 8;
-      g.beginPath(); g.roundRect(x, (c.height - h) / 2, 4, h, 2); g.fill(); });
-    silence = niveau < 0.04 ? silence + 1 : 0;
-    if (silence > 120 && !prevenu) { prevenu = true; msg("m7r", "Je n'entends rien : parlez plus près du micro.", "att"); }
-    if (silence === 0 && prevenu) { prevenu = false; msg("m7r", "", ""); }
-    const s = Math.floor((Date.now() - debutDictee) / 1000);
-    $("chrono").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
-    animation = requestAnimationFrame(dessiner);
+// Bouton de dictée : options {msgId, compact, apres(texte)}. Le bouton ne bouge jamais ; il devient « stop » pendant l'enregistrement.
+function creerDictee(hote, {msgId, compact, apres}) {
+  hote.innerHTML = '<div class="dictee' + (compact ? " compact" : "") + '"><button type="button" class="rond" title="Dicter" aria-label="Dicter">' + SVG_MIC +
+    '</button><span class="etiquette">Dicter</span><span class="direct"><canvas width="192" height="48"></canvas><span class="chrono">0:00</span>' +
+    '<button type="button" class="annuler" title="Annuler (Échap)" aria-label="Annuler la dictée">✕</button></span></div>';
+  const racine = hote.firstChild, bouton = racine.querySelector(".rond"), etiquette = racine.querySelector(".etiquette"),
+        canvas = racine.querySelector("canvas"), chrono = racine.querySelector(".chrono");
+  let enregistreur = null, annulee = false, animation = null, debut = 0;
+  const etat = e => {  // "repos" | "actif" | "attente"
+    racine.classList.toggle("actif", e === "actif"); racine.classList.toggle("attente", e === "attente");
+    bouton.innerHTML = e === "actif" ? SVG_STOP : e === "attente" ? SVG_ATTENTE : SVG_MIC;
+    bouton.title = e === "actif" ? "Terminer et transcrire" : "Dicter";
+    etiquette.textContent = e === "attente" ? "Transcription…" : "Dicter";
+    dicteeEnCours = e === "repos" ? null : instance; verrouiller();
+    if (e === "attente") bouton.disabled = true;
   };
-  dessiner();
+  const onde = flux => {
+    const analyse = audioCtx.createAnalyser(); analyse.fftSize = 1024;
+    audioCtx.createMediaStreamSource(flux).connect(analyse);
+    const donnees = new Uint8Array(analyse.fftSize), g = canvas.getContext("2d"), barres = [];
+    let silence = 0, prevenu = false;
+    const dessiner = () => {
+      analyse.getByteTimeDomainData(donnees);
+      let somme = 0; for (const v of donnees) somme += (v - 128) ** 2;
+      const niveau = Math.min(1, Math.sqrt(somme / donnees.length) / 40);
+      barres.push(niveau); if (barres.length > 24) barres.shift();
+      g.clearRect(0, 0, canvas.width, canvas.height); g.fillStyle = "#d93a2e";
+      barres.forEach((b, i) => { const h = Math.max(4, b * canvas.height); const x = canvas.width - (barres.length - i) * 8;
+        g.beginPath(); g.roundRect(x, (canvas.height - h) / 2, 4, h, 2); g.fill(); });
+      silence = niveau < 0.04 ? silence + 1 : 0;
+      if (silence > 120 && !prevenu) { prevenu = true; msg(msgId, "Je n'entends rien : parlez plus près du micro.", "att"); }
+      if (silence === 0 && prevenu) { prevenu = false; msg(msgId, "", ""); }
+      const sec = Math.floor((Date.now() - debut) / 1000);
+      chrono.textContent = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+      animation = requestAnimationFrame(dessiner);
+    };
+    dessiner();
+  };
+  const instance = { hote,
+    annuler() { if (enregistreur) { annulee = true; enregistreur.stop(); } },
+    bloquer(oui) { bouton.disabled = !!oui; } };
+  racine.querySelector(".annuler").onclick = () => instance.annuler();
+  bouton.onclick = async () => {
+    if (enregistreur) return enregistreur.stop();
+    let flux;
+    try { flux = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true}}); }
+    catch (e) { return msg(msgId, "Micro inaccessible : autorisez le micro pour cette fenêtre, ou vérifiez qu'un micro est branché.", "err"); }
+    audioCtx = audioCtx || new AudioContext(); await audioCtx.resume();
+    const morceaux = [];
+    enregistreur = new MediaRecorder(flux);
+    enregistreur.ondataavailable = ev => morceaux.push(ev.data);
+    annulee = false;
+    enregistreur.onstop = async () => {
+      flux.getTracks().forEach(t => t.stop()); enregistreur = null;
+      cancelAnimationFrame(animation); bip(520);
+      if (annulee) { etat("repos"); return msg(msgId, "Dictée annulée.", "ok"); }
+      etat("attente"); msg(msgId, "", "");
+      try {
+        const octets = new Uint8Array(await new Blob(morceaux).arrayBuffer());
+        let bin = ""; for (let i = 0; i < octets.length; i += 0x8000) bin += String.fromCharCode(...octets.subarray(i, i + 0x8000));
+        const r = await api("/api/dicter", {audio: btoa(bin)});
+        if (!r.texte) return msg(msgId, "Je n'ai rien entendu.", "att");
+        apres(r.texte);
+      } catch (e) { msg(msgId, e.message, "err"); }
+      finally { etat("repos"); }
+    };
+    enregistreur.start(1000);
+    debut = Date.now(); bip(880);
+    chrono.textContent = "0:00"; etat("actif"); onde(flux);
+    msg(msgId, "", "");
+  };
+  dictees.push(instance);
+  return instance;
 }
-$("b-dicter").onclick = async () => {
-  if (enregistreur) return enregistreur.stop();
-  let flux;
-  try { flux = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true}}); }
-  catch (e) { return msg("m7r", "Micro inaccessible : autorisez le micro pour cette fenêtre, ou vérifiez qu'un micro est branché.", "err"); }
-  audioCtx = audioCtx || new AudioContext(); await audioCtx.resume();
-  const morceaux = [];
-  enregistreur = new MediaRecorder(flux);
-  enregistreur.ondataavailable = ev => morceaux.push(ev.data);
-  dicteeAnnulee = false;
-  enregistreur.onstop = async () => {
-    flux.getTracks().forEach(t => t.stop()); enregistreur = null;
-    cancelAnimationFrame(animation); bip(520);
-    if (dicteeAnnulee) { etatDictee("repos"); return msg("m7r", "Dictée annulée.", "ok"); }
-    etatDictee("attente"); msg("m7r", "", "");
-    try {
-      const octets = new Uint8Array(await new Blob(morceaux).arrayBuffer());
-      let bin = ""; for (let i = 0; i < octets.length; i += 0x8000) bin += String.fromCharCode(...octets.subarray(i, i + 0x8000));
-      const r = await api("/api/dicter", {audio: btoa(bin)});
-      if (!r.texte) return msg("m7r", "Je n'ai rien entendu.", "att");
-      const z = $("i-regles"); z.value = z.value.replace(/\s*$/, "") + "\n- " + r.texte + "\n"; reglesTouchees = true;
-      z.scrollTop = z.scrollHeight;
-      msg("m7r", "Ajouté à la fin. Relisez, puis Enregistrer les règles.", "ok");
-    } catch (e) { msg("m7r", e.message, "err"); }
-    finally { etatDictee("repos"); }
-  };
-  enregistreur.start(1000);
-  debutDictee = Date.now(); bip(880);
-  $("chrono").textContent = "0:00"; etatDictee("actif"); afficherOnde(flux);
-  msg("m7r", "", "");
-};
+creerDictee($("dictee-regles"), {msgId: "m7r", apres: texte => {
+  const z = $("i-regles"); z.value = z.value.replace(/\s*$/, "") + "\n- " + texte + "\n"; reglesTouchees = true;
+  z.scrollTop = z.scrollHeight;
+  msg("m7r", "Ajouté à la fin. Relisez, puis Enregistrer les règles.", "ok");
+}});
 // Questionnaire du magasin (carte 8)
 let ficheTouchee = false;
 function afficherFiche(f) {
   const total = f.questions.length, faites = f.questions.filter(q => q.reponse).length;
   fait(8, total && faites === total, total ? faites + " / " + total + " réponses" : "");
   $("fiche-progres").style.width = (total ? 100 * faites / total : 0) + "%";
-  if (!ficheTouchee && !$("fiche-questions").contains(document.activeElement)) {
+  if (!ficheTouchee && !dicteeEnCours && !$("fiche-questions").contains(document.activeElement)) {
     let html = "", theme = "";
     for (const q of f.questions) {
       if (q.theme !== theme) { theme = q.theme; html += '<div class="fiche-theme">' + echapper(theme) + '</div>'; }
-      html += '<label class="fiche-q' + (q.reponse ? ' repondue' : '') + '"><span>' + echapper(q.question) + '</span>' +
+      html += '<div class="fiche-q' + (q.reponse ? ' repondue' : '') + '"><label><span>' + echapper(q.question) + '</span>' +
         '<textarea rows="1" data-id="' + q.id + '" placeholder="' + echapper(q.exemple ? "Ex. : " + q.exemple : "") + '">' +
-        echapper(q.reponse) + '</textarea></label>';
+        echapper(q.reponse) + '</textarea></label><div class="fiche-micro" data-micro="' + q.id + '"></div></div>';
     }
     $("fiche-questions").innerHTML = html;
     $("fiche-questions").querySelectorAll("textarea").forEach(t => { t.oninput = () => { ficheTouchee = true; ajuster(t); }; ajuster(t); });
+    $("fiche-questions").querySelectorAll("[data-micro]").forEach(h => {
+      const t = $("fiche-questions").querySelector('textarea[data-id="' + h.dataset.micro + '"]');
+      creerDictee(h, {msgId: "m8", compact: true, apres: texte => {
+        t.value = t.value.trim() ? t.value.trim() + " " + texte : texte; ficheTouchee = true; ajuster(t);
+        msg("m8", "Ajouté à la réponse. Relisez, puis Enregistrer le questionnaire.", "ok");
+      }});
+    });
   }
   $("proc-titre").textContent = "Procédures apprises par l'agent (" + f.procedures.length + ")";
   const liste = f.procedures.map((p, i) => '<div class="proc"><b>' + echapper(p.nom) +
