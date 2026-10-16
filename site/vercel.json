@@ -13,8 +13,12 @@
   ],
   "rewrites": [
     {
-      "source": "/api/ia/:chemin+",
-      "destination": "/api/ia?c=:chemin+"
+      "source": "/api/ia/:p1/:p2",
+      "destination": "/api/ia?p=:p1&p=:p2"
+    },
+    {
+      "source": "/api/ia/:p1",
+      "destination": "/api/ia?p=:p1"
     }
   ]
 }

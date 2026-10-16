@@ -1,7 +1,7 @@
 // Passerelle Claude d'Optizien.
 // Le logiciel des magasins appelle ce serveur avec le compte Optizien du magasin (en-tête x-api-key = "identifiant:motdepasse").
 // La clé Anthropic n'existe qu'ici : variable d'environnement Vercel ANTHROPIC_API_KEY (et ANTHROPIC_WORKSPACE_ID si la clé est multi-espaces). Aucun magasin ne la voit.
-//   POST /api/ia/v1/messages  -> (réécrit en /api/ia?c=v1/messages) transmis à Anthropic (modèles autorisés seulement)
+//   POST /api/ia/v1/messages  -> (réécrit en /api/ia?p=v1&p=messages) transmis à Anthropic (modèles autorisés seulement)
 //   GET  /api/ia/ping         -> {"ok":true,"cle":true|false} : le compte est accepté, le serveur a-t-il sa clé ?
 // Comptes : variable OPTIZIEN_COMPTES = "identifiant:sha256(identifiant:motdepasse);…" (la même que pour /telecharger).
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -43,16 +43,16 @@ async function lire(req) {
 }
 
 export default async function handler(req, res) {
-  // vercel.json réécrit /api/ia/<chemin> vers /api/ia?c=<chemin> : le chemin voulu est dans le paramètre « c ».
+  // vercel.json réécrit /api/ia/<a>/<b> en /api/ia?p=<a>&p=<b> : le chemin voulu est la suite des paramètres « p ».
   const url = new URL(req.url, 'http://x');
-  const demande = url.searchParams.get('c');
-  const chemin = demande !== null ? '/' + demande.replace(/^\/+|\/+$/g, '') : url.pathname.replace(/^\/api\/ia/, '').replace(/\/$/, '');
-  url.searchParams.delete('c');
+  const morceaux = url.searchParams.getAll('p').flatMap((m) => m.split('/')).filter(Boolean);
+  const chemin = morceaux.length ? '/' + morceaux.join('/') : url.pathname.replace(/^\/api\/ia/, '').replace(/\/$/, '');
+  url.searchParams.delete('p');
   const id = compte(req);
   if (!id) return erreur(res, 401, 'authentication_error', "Compte Optizien refusé : vérifiez l'identifiant et le mot de passe.");
 
   if (req.method === 'GET' && chemin === '/ping') return repondre(res, 200, { ok: true, cle: !!process.env.ANTHROPIC_API_KEY });
-  if (req.method !== 'POST' || chemin !== '/v1/messages') return erreur(res, 404, 'not_found_error', 'Route non autorisée.');
+  if (req.method !== 'POST' || chemin !== '/v1/messages') return erreur(res, 404, 'not_found_error', `Route non autorisée (${req.method} ${chemin || '/'}).`);
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) return erreur(res, 503, 'api_error', "Le serveur Optizien n'a pas encore sa clé IA : prévenez Optizien.");
 
