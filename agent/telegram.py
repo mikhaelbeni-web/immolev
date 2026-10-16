@@ -439,7 +439,12 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     for bavard in ("httpx", "httpx2", "httpcore"):  # leurs lignes contiennent le jeton du bot
         logging.getLogger(bavard).setLevel(logging.WARNING)
-    os.environ["ANTHROPIC_API_KEY"] = secret("ANTHROPIC_API_KEY")
+    try:  # compte Optizien : l'agent passe par la passerelle du site, sans clé API sur ce PC
+        from . import passerelle
+        compte = json.loads(secret("OPTIZIEN_COMPTE"))
+        os.environ.update(passerelle.environnement(compte))
+    except SystemExit:  # pas de compte : ancienne installation avec sa propre clé
+        os.environ["ANTHROPIC_API_KEY"] = secret("ANTHROPIC_API_KEY")
     membres = {int(m) for m in secret("TELEGRAM_MEMBRES").split(",") if m.strip()}
     nav = Navigateur.lancer(os.environ.get("CHROME_PROFIL", "profil-chrome"))
     connecteurs = ConnecteursMCP.depuis_fichier(os.environ["CONNECTEURS"]) if os.environ.get("CONNECTEURS") else None

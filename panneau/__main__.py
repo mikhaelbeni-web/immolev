@@ -218,8 +218,7 @@ class Etat:
         if not self.composants_ok():
             return
         threading.Thread(target=self.messagerie.rafraichir_comptes_ms, daemon=True).start()
-        if (cle := lire_secret("ANTHROPIC_API_KEY")):
-            self.verif_cle = verifier_cle(cle)
+        self.verifier_ia()
         if (jeton := lire_secret("TELEGRAM_TOKEN")):
             self.verif_bot = verifier_bot(jeton)
 
@@ -302,8 +301,8 @@ class Etat:
         manque = []
         if not self.composants_ok():
             manque.append("installer les composants")
-        if not lire_secret("ANTHROPIC_API_KEY"):
-            manque.append("la clé API Claude")
+        if not (self.compte() or lire_secret("ANTHROPIC_API_KEY")):
+            manque.append("le compte Optizien")
         if not lire_secret("TELEGRAM_TOKEN"):
             manque.append("le bot Telegram")
         if not self.membres():
@@ -344,7 +343,18 @@ class Etat:
         self._maj_cache = (time.time(), trouve)
         return trouve
 
-    # compte du site Optizien (mises à jour en ligne) ---------------------------
+    def verifier_ia(self) -> None:
+        """Connexion de l'agent à Claude : par la passerelle du site (compte Optizien), sinon par une ancienne clé locale."""
+        if (compte := self.compte()):
+            self._acces()
+            from agent import passerelle
+            self.verif_cle = passerelle.ping(compte)
+        elif (cle := lire_secret("ANTHROPIC_API_KEY")):
+            self.verif_cle = verifier_cle(cle)
+        else:
+            self.verif_cle = None
+
+    # compte du site Optizien (agent et mises à jour en ligne) ---------------------------
     def compte(self) -> dict | None:
         brut = lire_secret("OPTIZIEN_COMPTE")
         return json.loads(brut) if brut else None
@@ -360,6 +370,7 @@ class Etat:
         except OSError as e:
             raise ValueError(f"Site Optizien injoignable : {e}") from None
         ecrire_secret("OPTIZIEN_COMPTE", json.dumps(compte))
+        self.verifier_ia()
         self.verifier_en_ligne()
 
     def verifier_en_ligne(self) -> None:
@@ -510,11 +521,11 @@ class Etat:
         (DONNEES / "reglages-ia.json").write_text(json.dumps({"modele": modele, "plafond": plafond}), encoding="utf-8")
 
     def vue(self) -> dict:
-        cle, jeton = lire_secret("ANTHROPIC_API_KEY"), lire_secret("TELEGRAM_TOKEN")
+        cle, jeton, compte = lire_secret("ANTHROPIC_API_KEY"), lire_secret("TELEGRAM_TOKEN"), self.compte()
         return {
             "composants": {"ok": self.composants_ok(), **self.installation},
             "chrome": bool(systeme.chrome()),
-            "cle": {"enregistree": bool(cle), "apercu": apercu(cle), "verif": self.verif_cle},
+            "cle": {"enregistree": bool(compte or cle), "verif": self.verif_cle},
             "bot": {"enregistre": bool(jeton), "apercu": apercu(jeton, 6), "verif": self.verif_bot},
             "membres": self.membres() if self.composants_ok() else [],
             "demandes": self.demandes() if self.composants_ok() else [],
@@ -595,13 +606,6 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
         def _action(self, chemin: str, c: dict):
             if chemin == "/api/installer":
                 etat.installer()
-            elif chemin == "/api/cle":
-                cle = propre(c.get("valeur"))
-                verif = verifier_cle(cle)
-                if verif["ok"] is False:
-                    raise ValueError(verif["message"])
-                ecrire_secret("ANTHROPIC_API_KEY", cle)
-                etat.verif_cle = verif
             elif chemin == "/api/bot":
                 jeton_bot = propre(c.get("valeur"))
                 verif = verifier_bot(jeton_bot)

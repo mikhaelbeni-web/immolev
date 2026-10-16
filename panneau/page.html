@@ -173,18 +173,15 @@
   </section>
 
   <section class="carte">
-    <div class="titre"><span class="num" id="n2">2</span><h2>Clé API Claude</h2><span class="etat" id="e2"></span></div>
+    <div class="titre"><span class="num" id="n2">2</span><h2>Compte Optizien</h2><span class="etat" id="e2"></span></div>
     <div class="corps">
-      <div class="ligne">
-        <input type="password" id="i-cle" placeholder="sk-ant-api03-…" autocomplete="off">
-        <button id="b-cle">Vérifier et enregistrer</button>
+      <p class="petit" id="p-compte">Le compte du magasin donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Optizien.</p>
+      <div class="ligne" id="f-compte">
+        <input type="text" id="i-compte-id" placeholder="Identifiant Optizien" autocomplete="off">
+        <input type="password" id="i-compte-mdp" placeholder="Mot de passe" autocomplete="new-password">
+        <button id="b-compte">Se connecter</button>
       </div>
       <div class="msg" id="m2"></div>
-      <details><summary>Où trouver la clé ?</summary><ol>
-        <li>Ouvrez <b>console.anthropic.com</b> (différent de claude.ai) et connectez-vous.</li>
-        <li><b>Billing</b> : ajoutez un moyen de paiement et un peu de crédit.</li>
-        <li><b>API Keys</b> → <b>Create Key</b>, copiez la clé (elle commence par <code>sk-ant-api</code>) et collez-la ici.</li>
-      </ol></details>
     </div>
   </section>
 
@@ -380,14 +377,6 @@
       </div>
       <div class="msg" id="m-ia"></div>
       <table id="t-couts"></table>
-      <h3 class="sous-titre">Mises à jour en ligne</h3>
-      <p class="petit" id="p-compte">Avec le compte Optizien du magasin, les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »).</p>
-      <div class="ligne" id="f-compte">
-        <input type="text" id="i-compte-id" placeholder="Identifiant Optizien" autocomplete="off">
-        <input type="password" id="i-compte-mdp" placeholder="Mot de passe" autocomplete="new-password">
-        <button class="second" id="b-compte">Enregistrer</button>
-      </div>
-      <div class="msg" id="m-compte"></div>
     </div>
   </section>
 </main>
@@ -437,7 +426,7 @@ function afficher(e) {
   else if (c.ok) msg("m1", "");
 
   const v = e.cle.verif;
-  fait(2, e.cle.enregistree && v?.ok !== false, e.cle.enregistree ? "Enregistrée : " + e.cle.apercu : "");
+  fait(2, e.cle.enregistree && v?.ok !== false, e.compte ? "Connecté : " + e.compte : (e.cle.enregistree ? "Clé locale" : "À saisir"));
   if (e.cle.enregistree && v && !$("m2").dataset.local) msg("m2", v.message, v.ok ? "ok" : (v.ok === false ? "err" : "att"));
 
   const b = e.bot.verif;
@@ -466,8 +455,8 @@ function afficher(e) {
 
   $("version").textContent = e.version;
   $("c-maj").classList.toggle("cache", !e.maj);
-  $("p-compte").textContent = e.compte ? "Compte « " + e.compte + " » enregistré : les nouvelles versions arrivent toutes seules. Pour changer de compte, saisissez-en un autre."
-    : "Avec le compte Optizien du magasin, les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »).";
+  $("p-compte").textContent = e.compte ? "Compte « " + e.compte + " » enregistré : l'agent est fourni par Optizien et les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »). Pour changer de compte, saisissez-en un autre."
+    : "Le compte du magasin donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Optizien.";
   if (e.maj) $("maj-version").textContent = "(" + e.maj.version + ")";
   if (e.fiche) afficherFiche(e.fiche);
   fait(7, !e.regles.vide, e.regles.vide ? "À compléter" : "Enregistrées");
@@ -580,8 +569,6 @@ async function rafraichir() {
 }
 
 $("b-installer").onclick = () => action($("b-installer"), "m1", () => api("/api/installer", {}), () => "Installation lancée…");
-$("b-cle").onclick = () => { $("m2").dataset.local = 1; action($("b-cle"), "m2", () => api("/api/cle", {valeur: $("i-cle").value}),
-  () => { $("i-cle").value = ""; delete $("m2").dataset.local; return "Clé acceptée et enregistrée."; }); };
 $("b-bot").onclick = () => { $("m3").dataset.local = 1; action($("b-bot"), "m3", () => api("/api/bot", {valeur: $("i-bot").value}),
   () => { $("i-bot").value = ""; delete $("m3").dataset.local; return "Bot enregistré."; }); };
 $("b-chercher").onclick = () => action($("b-chercher"), "m4", async () => {
@@ -633,9 +620,9 @@ $("b-quitter").onclick = async () => {
 };
 
 let acces = [], siteEnCours = null, reglesTouchees = false;
-$("b-compte").onclick = () => action($("b-compte"), "m-compte",
+$("b-compte").onclick = () => { $("m2").dataset.local = 1; action($("b-compte"), "m2",
   () => api("/api/compte", {identifiant: $("i-compte-id").value, mot_de_passe: $("i-compte-mdp").value}),
-  () => { $("i-compte-id").value = $("i-compte-mdp").value = ""; return "Compte accepté par le site Optizien."; });
+  () => { $("i-compte-id").value = $("i-compte-mdp").value = ""; delete $("m2").dataset.local; return "Compte accepté : l'agent est connecté."; }); };
 $("b-actualiser").onclick = async () => {
   const b = $("b-actualiser"); b.disabled = true; b.textContent = "Vérification…";
   try { const r = await api("/api/actualiser", {}); await rafraichir();
@@ -833,7 +820,7 @@ document.addEventListener("click", async ev => {
     if (d.retirerMs && confirm("Retirer cette boîte ?")) { t.disabled = true; await api("/api/outlook/retirer", {id: d.retirerMs}); await rafraichir(); }
   } catch (e) { msg(d.modifierSite || d.supprSite ? "m5" : "m6o", e.message, "err"); }
 });
-for (const [i, b] of [["i-cle", "b-cle"], ["i-bot", "b-bot"]]) $(i).onkeydown = e => { if (e.key === "Enter") $(b).click(); };
+for (const [i, b] of [["i-compte-mdp", "b-compte"], ["i-bot", "b-bot"]]) $(i).onkeydown = e => { if (e.key === "Enter") $(b).click(); };
 
 rafraichir();
 setInterval(rafraichir, 2500);
