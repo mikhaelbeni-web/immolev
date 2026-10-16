@@ -5,7 +5,7 @@ from panneau import visage
 
 def test_liste_et_images():
     l = visage.liste()
-    assert {a["genre"] for a in l} == {"f", "m"} and len(l) >= 8
+    assert {a["genre"] for a in l} == {"f", "m"} and len(l) >= 4
     assert visage.image(l[0]["id"])[:2] == b"\xff\xd8"  # JPEG
     assert visage.image("../page.html") is None
 

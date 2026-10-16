@@ -1,7 +1,7 @@
 """Visage et prénom de l'agent : choisis dans le panneau, appliqués au bot Telegram (photo + nom).
 
 Choix enregistré dans <données>/visage.json : {"id": "lea", "nom": "Léa"}.
-Images : panneau/avatars/<id>.jpg (dessinées par outils/avatars.py).
+Images : panneau/avatars/<id>.jpg (portraits 3D fournis par Optizien, listés dans liste.json).
 """
 from __future__ import annotations
 
