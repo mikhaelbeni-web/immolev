@@ -375,22 +375,29 @@ class Pont:
         else:
             self._envoyer(chat, f"Demande de {demande['nom']} refusée.")
 
+    def _repondre_bouton(self, cb_id: str, **params: Any) -> None:
+        """Arrête le sablier du bouton. Un échec (clic ancien, réseau coupé) ne doit jamais bloquer l'action."""
+        try:
+            self.api.appeler("answerCallbackQuery", callback_query_id=cb_id, **params)
+        except Exception:
+            logging.warning("réponse au bouton impossible", exc_info=True)
+
     def _traiter_bouton(self, cb: dict[str, Any]) -> None:
         self._relire_membres()
         if cb.get("from", {}).get("id") not in self.membres:
-            return self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"])
+            return self._repondre_bouton(cb["id"])
         choix, _, action_id = cb.get("data", "").partition(":")
         if choix in ("membre_ok", "membre_non"):
-            self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"])
+            self._repondre_bouton(cb["id"])
             return self._decider_membre(cb, choix, action_id)
         chat = (cb.get("message") or {}).get("chat", {}).get("id")
         if action_id not in self.actions:
-            self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"], text="Cette demande n'est plus active.")
+            self._repondre_bouton(cb["id"], text="Cette demande n'est plus active.")
             if chat:
                 self._envoyer(chat, "Ce bouton n'est plus actif (demande déjà traitée ou trop ancienne). "
                                     "Redemande l'action et je te renverrai un nouveau bouton.")
             return
-        self.api.appeler("answerCallbackQuery", callback_query_id=cb["id"],
+        self._repondre_bouton(cb["id"],
                          text="Reçu, j'exécute…" if choix == "ok" else "Annulé.")
         self._confirmer(action_id, choix == "ok", cb["from"]["id"])
 
@@ -404,7 +411,7 @@ class Pont:
 
         def executer() -> None:
             reponse = executer_confirmee(action, self._outils(self._contexte(chat_id)))
-            tracer(action.outil, action.id, f"confirmee par {qui}")
+            tracer(action.outil, action.id, f"confirmee par {qui} : {reponse[:200]}")
             self._envoyer(chat_id, reponse)
         if not self.asynchrone:
             return executer()
@@ -413,6 +420,8 @@ class Pont:
             self._cond.notify()
         if self.en_cours and not self.en_cours.appel:
             self._envoyer(chat_id, f"Confirmé : je l'exécute dès la fin de la tâche n° {self.en_cours.numero}.")
+        else:
+            self._envoyer(chat_id, "⏳ Confirmé, j'exécute…")
 
     def ecouter(self) -> None:
         """Écoute Telegram dans un fil à part ; les tâches tournent dans le fil principal (celui de Chrome)."""

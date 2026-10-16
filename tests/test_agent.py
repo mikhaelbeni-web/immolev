@@ -246,3 +246,16 @@ def test_actions_en_attente_survivent_au_redemarrage(tmp_path, monkeypatch):
     neuf._recharger_actions()
     neuf.traiter_update({"callback_query": {"id": "c", "from": {"id": 11}, "data": "ok:a1", "message": {"chat": {"id": 5}}}})
     assert executees == ["a1"]
+
+
+def test_bouton_s_execute_meme_si_la_reponse_au_clic_echoue(tmp_path, monkeypatch):
+    pont, tg, executees = _pont_avec_action(tmp_path, monkeypatch)
+    appeler = tg.appeler
+
+    def casse(methode, **p):
+        if methode == "answerCallbackQuery":
+            raise RuntimeError("Telegram answerCallbackQuery : query is too old")
+        return appeler(methode, **p)
+    tg.appeler = casse
+    pont.traiter_update({"callback_query": {"id": "c", "from": {"id": 11}, "data": "ok:a1", "message": {"chat": {"id": 5}}}})
+    assert executees == ["a1"] and "Brouillon créé." in tg.textes()[-1]
