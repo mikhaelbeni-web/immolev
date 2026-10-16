@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Portail</title></head><body>
+<div id="etape1"><form id="f1" onsubmit="event.preventDefault(); suite1()">
+  <label for="u">Identifiant</label><input id="u" name="login" type="text">
+  <button type="submit">Suivant</button></form></div>
+<div id="etape2" style="display:none"><form onsubmit="event.preventDefault(); suite2()">
+  <label for="p">Mot de passe</label><input id="p" name="pwd" type="password">
+  <button type="submit">Se connecter</button></form></div>
+<div id="etape3" style="display:none"><form onsubmit="event.preventDefault(); suite3()">
+  <label for="c">Code reçu par SMS</label><input id="c" name="otp" type="text">
+  <button type="submit">Valider le code</button></form></div>
+<div id="fin" style="display:none">Bienvenue dans le portail</div>
+<div id="err" style="display:none">Identifiants incorrects</div>
+<script>
+const montre = id => { for (const d of document.body.children) if (d.tagName === 'DIV') d.style.display = 'none'; document.getElementById(id).style.display = 'block'; };
+function suite1() { window.u = document.getElementById('u').value; montre('etape2'); }
+function suite2() { const ok = window.u === 'opticien42' && document.getElementById('p').value === 's3cret!';
+  if (ok) montre('etape3'); else { montre('etape2'); document.getElementById('err').style.display = 'block'; } }
+function suite3() { if (document.getElementById('c').value === '123456') montre('fin'); }
+</script></body></html>

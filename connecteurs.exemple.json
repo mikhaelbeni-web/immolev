@@ -1,0 +1,25 @@
+{
+  "_mode_d_emploi": "Copier en connecteurs.json. Les clés commençant par _ sont ignorées. ${VAR} est remplacé par la variable d'environnement VAR : aucun jeton dans ce fichier. 'lecture' liste les outils autorisés sans confirmation ; tout autre outil demande un clic Confirmer.",
+
+  "outlook": {
+    "_compte": "Hotmail / Outlook.com (compte personnel). Pour un compte Microsoft 365 professionnel : retirer MS365_MCP_TENANT_ID et ajouter \"--org-mode\" dans args. Première connexion : npx -y @softeria/ms-365-mcp-server --login",
+    "commande": "npx",
+    "args": ["-y", "@softeria/ms-365-mcp-server"],
+    "env": {"MS365_MCP_TENANT_ID": "consumers"},
+    "lecture": ["list-mail-messages", "list-mail-folders", "list-mail-folder-messages", "get-mail-message",
+                "list-mail-attachments", "get-mail-attachment-content", "list-calendar-events", "get-calendar-event"]
+  },
+
+  "gmail": {
+    "_compte": "Connecteur Gmail d'Optizien (API Gmail officielle). Connexion une fois : python -m connecteurs.gmail_mcp --connexion (fichier gmail_client_secret.json requis).",
+    "commande": "python",
+    "args": ["-m", "connecteurs.gmail_mcp"]
+  },
+
+  "_gmail_google_preview": {
+    "_etat": "Serveur MCP Gmail de Google, en accès anticipé. Alternative au connecteur ci-dessus si Google l'ouvre à tous.",
+    "url": "https://gmailmcp.googleapis.com/mcp/v1",
+    "entetes": {"Authorization": "Bearer ${GMAIL_JETON}"},
+    "lecture": ["search_threads", "get_thread", "get_message", "list_labels", "list_drafts"]
+  }
+}

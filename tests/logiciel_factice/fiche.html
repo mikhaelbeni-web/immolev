@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Fiche client</title></head><body>
+<h1>Fiche DUPONT Jean</h1>
+<div role="tab">Visite</div><div role="tab">PEC</div>
+<form onsubmit="event.preventDefault(); document.getElementById('statut').innerText = 'Enregistré : OD ' + document.getElementById('sph_od').value + ' / ' + document.getElementById('mutuelle').value;">
+<label for="sph_od">Sphère OD</label><input id="sph_od" name="sph_od">
+<label for="mutuelle">Mutuelle RC1</label><select id="mutuelle"><option>—</option><option>ALMERYS</option><option>VIAMEDIS</option></select>
+<label><input type="checkbox" id="consent"> Consentement imprimé</label>
+<button type="submit">Enregistrer</button>
+</form><p id="statut">Non enregistré</p>
+</body></html>

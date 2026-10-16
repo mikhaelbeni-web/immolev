@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optizien</title>
+<link rel="icon" href="/icone">
+<style>
+  :root {
+    --fond: #f4f6f9; --carte: #ffffff; --texte: #1d2433; --doux: #5d6b82; --bord: #e2e7ef;
+    --bleu: #1f5eff; --bleu-doux: #e8efff; --vert: #12805c; --vert-doux: #e3f5ee;
+    --orange: #b45309; --orange-doux: #fdf1e2; --rouge: #c0362c; --rouge-doux: #fde8e6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte);
+         font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  header { background: var(--carte); border-bottom: 1px solid var(--bord); padding: 18px 28px;
+           display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 2; }
+  header img { width: 36px; height: 36px; }
+  header h1 { font-size: 20px; margin: 0; font-weight: 600; }
+  header .sous { color: var(--doux); font-size: 13px; }
+  .pastille { margin-left: auto; padding: 6px 14px; border-radius: 99px; font-weight: 600; font-size: 13px; }
+  .pastille.on { background: var(--vert-doux); color: var(--vert); }
+  .pastille.off { background: #eef1f5; color: var(--doux); }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .titre { display: flex; align-items: center; gap: 12px; }
+  .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+         background: var(--bleu-doux); color: var(--bleu); flex: none; font-size: 14px; }
+  .num.ok { background: var(--vert); color: #fff; }
+  .titre h2 { font-size: 16px; margin: 0; font-weight: 600; }
+  .titre .etat { margin-left: auto; font-size: 13px; color: var(--doux); text-align: right; }
+  .corps { margin: 14px 0 0 42px; }
+  .ligne { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type=password], input[type=text] { flex: 1; min-width: 220px; padding: 10px 12px; border: 1px solid var(--bord);
+         border-radius: 9px; font: inherit; background: #fbfcfe; }
+  input:focus { outline: 2px solid var(--bleu); outline-offset: -1px; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 9px; padding: 10px 16px; cursor: pointer;
+           background: var(--bleu); color: #fff; }
+  button.second { background: #eef1f5; color: var(--texte); }
+  button.danger { background: var(--rouge-doux); color: var(--rouge); }
+  button.grand { padding: 14px 26px; font-size: 16px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { margin-top: 10px; padding: 9px 12px; border-radius: 9px; font-size: 14px; }
+  .msg.ok { background: var(--vert-doux); color: var(--vert); }
+  .msg.err { background: var(--rouge-doux); color: var(--rouge); }
+  .msg.att { background: var(--orange-doux); color: var(--orange); }
+  .msg:empty { display: none; }
+  details { margin-top: 10px; color: var(--doux); font-size: 14px; }
+  summary { cursor: pointer; color: var(--bleu); }
+  details ol { margin: 8px 0 0; padding-left: 20px; }
+  code { background: #eef1f5; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
+  .barre { height: 10px; background: #eef1f5; border-radius: 99px; overflow: hidden; margin: 12px 0 6px; }
+  .barre div { height: 100%; background: var(--bleu); width: 0; transition: width .4s; }
+  .petit { font-size: 13px; color: var(--doux); }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  td { padding: 8px 4px; border-top: 1px solid var(--bord); }
+  td:last-child { text-align: right; }
+  .agent { text-align: center; padding: 28px 22px; }
+  .agent p { color: var(--doux); margin: 6px 0 16px; }
+  pre { background: #0f1522; color: #d6deeb; border-radius: 10px; padding: 12px; max-height: 260px; overflow: auto;
+        font-size: 12px; white-space: pre-wrap; text-align: left; }
+  label.case { display: flex; gap: 10px; align-items: center; cursor: pointer; margin-top: 6px; }
+  .cache { display: none !important; }
+  .dictee { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 14px; border-radius: 10px;
+    background: #fdecec; color: #b42318; font-weight: 600; flex-wrap: wrap; }
+  .dictee canvas { max-width: 100%; }
+  .dictee .point { width: 12px; height: 12px; border-radius: 50%; background: #e5372b; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .fournisseurs { display: grid; gap: 10px; max-width: 420px; margin: 12px 0; }
+  .fournisseur { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: var(--texte);
+    border: 1px solid var(--bord); border-radius: 99px; padding: 13px 18px; font-size: 15px; font-weight: 600; }
+  .fournisseur:hover:not(:disabled) { background: #f6f8fb; }
+  .encart { margin-top: 12px; padding: 14px; border: 1px solid var(--bord); border-radius: 10px; }
+  .bandeau { border-color: var(--bleu); background: var(--bleu-doux); }
+  textarea { width: 100%; padding: 12px; border: 1px solid var(--bord); border-radius: 9px; font: 14px/1.5 Consolas, "Segoe UI", monospace; background: #fbfcfe; resize: vertical; }
+  select.champ { padding: 10px 12px; border: 1px solid var(--bord); border-radius: 9px; font: inherit; background: #fbfcfe; }
+  .sous-titre { font-size: 14px; margin: 14px 0 4px; color: var(--doux); text-transform: uppercase; letter-spacing: .04em; }
+  .sous-titre:first-child { margin-top: 0; }
+  .code { margin-top: 10px; padding: 14px; border-radius: 10px; background: var(--bleu-doux); color: var(--texte); }
+  .code b { display: block; font-size: 30px; letter-spacing: .15em; margin: 6px 0; color: var(--bleu); font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+<header>
+  <img src="/icone" alt="">
+  <div><h1>Optizien</h1><div class="sous">Agent du magasin · version <span id="version"></span></div></div>
+  <button class="second" id="b-actualiser" style="margin-left:auto">🔄 Actualiser</button>
+  <span id="pastille" class="pastille off" style="margin-left:0">Agent arrêté</span>
+</header>
+<main>
+  <section class="carte bandeau cache" id="c-maj">
+    <div class="ligne"><div style="flex:1"><b>Nouvelle version disponible</b> <span class="petit" id="maj-version"></span><br>
+      <span class="petit">Mise à jour en un clic : rien à supprimer ni à redémarrer. Vos réglages sont conservés.</span></div>
+      <button id="b-maj">Mettre à jour</button></div>
+    <div class="msg" id="m-maj"></div>
+  </section>
+
+  <section class="carte" id="c-composants">
+    <div class="titre"><span class="num" id="n1">1</span><h2>Composants</h2><span class="etat" id="e1"></span></div>
+    <div class="corps" id="corps1">
+      <p class="petit">À faire une seule fois par ordinateur : téléchargement d'environ 150 Mo, 2 à 5 minutes.</p>
+      <button id="b-installer">Installer les composants</button>
+      <div id="progres" class="cache"><div class="barre"><div id="barre"></div></div><div class="petit" id="ligne-install"></div></div>
+      <div class="msg" id="m1"></div>
+    </div>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><span class="num" id="n2">2</span><h2>Clé API Claude</h2><span class="etat" id="e2"></span></div>
+    <div class="corps">
+      <div class="ligne">
+        <input type="password" id="i-cle" placeholder="sk-ant-api03-…" autocomplete="off">
+        <button id="b-cle">Vérifier et enregistrer</button>
+      </div>
+      <div class="msg" id="m2"></div>
+      <details><summary>Où trouver la clé ?</summary><ol>
+        <li>Ouvrez <b>console.anthropic.com</b> (différent de claude.ai) et connectez-vous.</li>
+        <li><b>Billing</b> : ajoutez un moyen de paiement et un peu de crédit.</li>
+        <li><b>API Keys</b> → <b>Create Key</b>, copiez la clé (elle commence par <code>sk-ant-api</code>) et collez-la ici.</li>
+      </ol></details>
+    </div>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><span class="num" id="n3">3</span><h2>Bot Telegram</h2><span class="etat" id="e3"></span></div>
+    <div class="corps">
+      <div class="ligne">
+        <input type="password" id="i-bot" placeholder="123456789:AAH…" autocomplete="off">
+        <button id="b-bot">Vérifier et enregistrer</button>
+      </div>
+      <div class="msg" id="m3"></div>
+      <details><summary>Créer le bot</summary><ol>
+        <li>Dans Telegram, ouvrez <b>@BotFather</b> et envoyez <code>/newbot</code>.</li>
+        <li>Donnez un nom, puis un identifiant qui finit par <code>bot</code>.</li>
+        <li>Copiez la ligne du jeton (<code>123456789:AAH…</code>) et collez-la ici.</li>
+        <li>Envoyez <code>/setprivacy</code> à @BotFather, choisissez le bot, puis <b>Disable</b>.</li>
+        <li>Ajoutez le bot au groupe du magasin.</li>
+      </ol></details>
+    </div>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><span class="num" id="n4">4</span><h2>Personnes autorisées</h2><span class="etat" id="e4"></span></div>
+    <div class="corps">
+      <p class="petit">L'agent n'obéit qu'à ces personnes. Pour en ajouter une : elle ouvre le bot dans Telegram et appuie sur <b>Démarrer</b> (ou écrit dans le groupe). Sa demande apparaît ici, et chez les personnes déjà autorisées, avec Accepter ou Refuser.</p>
+      <table id="t-demandes"></table>
+      <div class="msg" id="m4"></div>
+      <table id="t-membres"></table>
+      <details><summary>Ajouter autrement</summary>
+        <div class="ligne" style="margin-top:8px"><button class="second" id="b-chercher">Rechercher les messages reçus (agent arrêté)</button></div>
+        <table id="t-trouves"></table>
+        <div class="ligne" style="margin-top:8px">
+          <input type="text" id="i-id" placeholder="Identifiant (ex. 5239868419)" inputmode="numeric">
+          <input type="text" id="i-nom" placeholder="Nom (facultatif)">
+          <button class="second" id="b-ajouter">Ajouter</button>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><span class="num" id="n5">5</span><h2>Accès aux sites</h2><span class="etat" id="e5"></span></div>
+    <div class="corps">
+      <p class="petit">Saisis une seule fois. L'agent se connecte seul quand une session expire ; il ne voit jamais les mots de passe, gardés dans le coffre de Windows. Si un site envoie un code par SMS ou mail, l'agent le demandera dans le groupe Telegram.</p>
+      <table id="t-acces"></table>
+      <div class="ligne" style="margin-top:10px">
+        <select id="i-site-nom" class="champ">
+          <option>MyEasyOptic</option><option>Almerys</option><option>Viamedis</option><option>SP Santé</option>
+          <option>iSanté</option><option>TP+</option><option>Génération</option><option>Mercer</option><option>Ociane</option>
+          <option value="">Autre…</option>
+        </select>
+        <input type="text" id="i-site-autre" class="cache" placeholder="Nom du site">
+        <input type="text" id="i-site-url" placeholder="Adresse de la page de connexion (https://…)">
+      </div>
+      <div class="ligne" style="margin-top:8px">
+        <input type="text" id="i-site-id" placeholder="Identifiant" autocomplete="off">
+        <input type="password" id="i-site-mdp" placeholder="Mot de passe" autocomplete="new-password">
+        <button id="b-site">Enregistrer</button>
+        <button class="second cache" id="b-site-annuler">Annuler</button>
+      </div>
+      <div class="msg" id="m5"></div>
+      <p class="petit">Adresse : ouvrez la page de connexion du site dans Chrome et copiez l'adresse en haut.</p>
+    </div>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><span class="num" id="n6">6</span><h2>Boîtes mail</h2><span class="etat" id="e6"></span></div>
+    <div class="corps">
+      <table id="t-gmail"></table>
+      <table id="t-outlook"></table>
+      <table id="t-mail"></table>
+      <p class="petit" id="p-mail-intro">Branchez une ou plusieurs boîtes. L'agent pourra les lire et préparer des brouillons.</p>
+      <div class="fournisseurs">
+        <button class="fournisseur" id="b-gmail"><svg viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.2-.1-2.3-.4-3.5z"/></svg>Continuer avec Google</button>
+        <button class="fournisseur" id="b-outlook"><svg viewBox="0 0 23 23" width="18" height="18"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>Continuer avec Microsoft (Hotmail, Outlook)</button>
+        <button class="fournisseur" id="b-autre">✉️ Autre adresse (Orange, Free, SFR…)</button>
+      </div>
+      <div class="code cache" id="outlook-code">Sur la page Microsoft qui vient de s'ouvrir, tapez ce code :<b id="code-ms"></b>
+        <span class="petit">puis connectez-vous à la boîte. <a id="lien-ms" href="https://microsoft.com/devicelogin" target="_blank">Rouvrir la page</a></span></div>
+      <div class="msg" id="m6g"></div>
+      <div class="msg" id="m6o"></div>
+
+      <div id="gmail-client" class="cache encart">
+        <p><b>Réglage unique pour activer « Continuer avec Google »</b> (une fois pour toutes, le fichier suit ensuite le dossier Optizien sur les autres PC).</p>
+        <ol>
+          <li>Sur <b>console.cloud.google.com</b>, créez un projet « Optizien ».</li>
+          <li>Activez l'<b>API Gmail</b> (Bibliothèque → Gmail API → Activer).</li>
+          <li><b>Écran de consentement OAuth</b> : type Externe, puis <b>Publier l'application</b> (sinon la connexion expire au bout de 7 jours).</li>
+          <li><b>Identifiants → Créer → ID client OAuth → Application de bureau</b>, puis téléchargez le fichier JSON.</li>
+        </ol>
+        <div class="ligne"><input type="file" id="i-gmail-client" accept=".json,application/json"></div>
+      </div>
+
+      <div id="mail-code" class="cache encart">
+        <div class="ligne">
+          <input type="text" id="i-mail-adresse" placeholder="Adresse mail" autocomplete="off">
+          <input type="password" id="i-mail-code" placeholder="Mot de passe ou code d'application" autocomplete="new-password">
+          <button class="second" id="b-mail">Ajouter</button>
+        </div>
+        <details><summary>Fournisseur non reconnu (serveurs à indiquer)</summary>
+          <div class="ligne" style="margin-top:8px">
+            <input type="text" id="i-mail-imap" placeholder="Serveur IMAP (ex. ssl0.ovh.net)">
+            <input type="text" id="i-mail-smtp" placeholder="Serveur SMTP (ex. ssl0.ovh.net)">
+          </div>
+        </details>
+        <details><summary>Gmail sans Google Cloud : code d'application</summary><ol>
+          <li>Ouvrez <b>myaccount.google.com/apppasswords</b> (validation en 2 étapes requise).</li>
+          <li>Nom : <code>Optizien</code> → <b>Créer</b>, puis collez le code de 16 lettres ci-dessus.</li>
+        </ol></details>
+      </div>
+      <div class="msg" id="m6m"></div>
+    </div>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><span class="num" id="n7">7</span><h2>Règles du magasin</h2><span class="etat" id="e7"></span></div>
+    <div class="corps">
+      <p class="petit">Tout ce que l'agent doit savoir pour éviter les questions : mutuelles et portails, habitudes de saisie, qui valide quoi… Remplacez les exemples « (ex.) ». Aucune donnée de patient ici. Sur Telegram, « retiens : … » ajoute une règle après confirmation.</p>
+      <textarea id="i-regles" rows="14" spellcheck="true"></textarea>
+      <div class="dictee cache" id="dictee"><span class="point"></span><canvas id="onde" width="300" height="40"></canvas>
+        <span id="chrono">0:00</span><span class="petit" id="niveau-msg"></span>
+        <button class="second" id="b-annuler-dictee" style="margin-left:auto">✕ Annuler</button></div>
+      <div class="ligne" style="margin-top:8px"><button class="second" id="b-dicter">🎙️ Dicter</button>
+        <button id="b-regles">Enregistrer les règles</button></div>
+      <div class="msg" id="m7r"></div>
+    </div>
+  </section>
+
+  <section class="carte agent">
+    <h2 style="margin:0;font-size:18px" id="agent-titre">Agent arrêté</h2>
+    <p id="agent-texte">Une fois démarré, un Chrome dédié s'ouvre. L'agent s'y connecte seul aux sites de la rubrique Accès.</p>
+    <button class="grand" id="b-demarrer">Démarrer l'agent</button>
+    <button class="grand danger cache" id="b-arreter">Arrêter l'agent</button>
+    <div class="msg" id="m6"></div>
+    <details id="d-journal"><summary>Journal de l'agent</summary><pre id="journal">…</pre></details>
+  </section>
+
+  <section class="carte">
+    <div class="titre"><h2>Options de ce PC</h2></div>
+    <div class="corps" style="margin-left:0">
+      <label class="case"><input type="checkbox" id="c-demarrage"> Démarrer l'agent automatiquement à l'allumage du PC</label>
+      <div class="ligne" style="margin-top:12px"><button class="second" id="b-bureau">Créer un raccourci Optizien sur le Bureau</button>
+        <button class="danger" id="b-quitter">Tout fermer</button></div>
+      <div class="ligne" style="margin-top:12px"><label class="petit" for="i-maj">Mettre à jour depuis un fichier Optizien.zip :</label>
+        <input type="file" id="i-maj" accept=".zip"></div>
+      <div class="msg" id="m7"></div>
+      <h3 class="sous-titre">Mises à jour en ligne</h3>
+      <p class="petit" id="p-compte">Avec le compte Optizien du magasin, les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »).</p>
+      <div class="ligne" id="f-compte">
+        <input type="text" id="i-compte-id" placeholder="Identifiant Optizien" autocomplete="off">
+        <input type="password" id="i-compte-mdp" placeholder="Mot de passe" autocomplete="new-password">
+        <button class="second" id="b-compte">Enregistrer</button>
+      </div>
+      <div class="msg" id="m-compte"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const JETON = new URLSearchParams(location.search).get("t");
+const $ = id => document.getElementById(id);
+let etat = null, attenteGoogle = false, attenteMs = false;
+
+async function api(chemin, corps) {
+  const r = await fetch(chemin, {
+    method: corps === undefined ? "GET" : "POST",
+    headers: {"X-Optizien": JETON, "Content-Type": "application/json"},
+    body: corps === undefined ? undefined : JSON.stringify(corps),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.erreur || "Erreur " + r.status);
+  return d;
+}
+function msg(id, texte, genre) { const m = $(id); m.textContent = texte || ""; m.className = "msg " + (genre || ""); }
+function fait(n, ok, texte) { $("n" + n).classList.toggle("ok", !!ok); $("n" + n).textContent = ok ? "✓" : n; $("e" + n).textContent = texte || ""; }
+async function action(bouton, msgId, fn, ok) {
+  bouton.disabled = true; msg(msgId, "En cours…", "att");
+  try { const r = await fn(); msg(msgId, ok ? ok(r) : "", "ok"); await rafraichir(); }
+  catch (e) { msg(msgId, e.message, "err"); }
+  finally { bouton.disabled = false; }
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function afficher(e) {
+  etat = e;
+  const c = e.composants;
+  fait(1, c.ok, c.ok ? "Installés" : (c.en_cours ? "Installation…" : "À installer"));
+  $("b-installer").classList.toggle("cache", c.ok || c.en_cours);
+  $("progres").classList.toggle("cache", !c.en_cours && !(c.progression > 0 && !c.ok));
+  $("barre").style.width = (c.ok ? 100 : c.progression) + "%";
+  $("ligne-install").textContent = c.ligne || "";
+  if (c.erreur) msg("m1", c.erreur, "err");
+  else if (!e.chrome) msg("m1", "Google Chrome n'est pas installé sur ce PC : installez-le depuis google.com/chrome.", "att");
+  else if (c.ok) msg("m1", "");
+
+  const v = e.cle.verif;
+  fait(2, e.cle.enregistree && v?.ok !== false, e.cle.enregistree ? "Enregistrée : " + e.cle.apercu : "");
+  if (e.cle.enregistree && v && !$("m2").dataset.local) msg("m2", v.message, v.ok ? "ok" : (v.ok === false ? "err" : "att"));
+
+  const b = e.bot.verif;
+  fait(3, e.bot.enregistre && b?.ok !== false, e.bot.enregistre ? (b?.nom || "Enregistré") : "");
+  if (e.bot.enregistre && b && !$("m3").dataset.local) {
+    if (b.ok && !b.lit_groupe) msg("m3", b.message + ". Attention : il ne lit pas encore le groupe. Dans @BotFather : /setprivacy → choisissez le bot → Disable.", "att");
+    else msg("m3", b.message, b.ok ? "ok" : (b.ok === false ? "err" : "att"));
+  }
+
+  fait(4, e.membres.length > 0, e.membres.length ? e.membres.length + " personne(s)" : "");
+  $("t-membres").innerHTML = e.membres.map(m =>
+    `<tr><td>${esc(m.nom) || "<span class=petit>(sans nom)</span>"} <span class="petit">${esc(m.id)}</span></td>
+     <td><button class="second" data-retirer="${esc(m.id)}">Retirer</button></td></tr>`).join("");
+  $("b-chercher").disabled = e.agent.en_marche || !e.bot.enregistre;
+  $("t-demandes").innerHTML = e.demandes.map(d =>
+    `<tr><td>🔔 <b>${esc(d.nom)}</b> ${d.pseudo ? "@" + esc(d.pseudo) : ""} <span class="petit">· ${esc(d.lieu)} · ${esc(d.date)}</span></td>
+     <td><button data-demande="${esc(d.id)}" data-accepter="1">Accepter</button>
+         <button class="second" data-demande="${esc(d.id)}">Refuser</button></td></tr>`).join("");
+
+  fait(5, e.acces.length > 0, e.acces.length ? e.acces.length + " site(s)" : "");
+  $("t-acces").innerHTML = e.acces.map(a =>
+    `<tr><td><b>${esc(a.nom)}</b> <span class="petit">${esc(a.domaine)} · ${esc(a.apercu)}</span></td>
+     <td><button class="second" data-modifier-site="${esc(a.id)}">Modifier</button>
+         <button class="second" data-suppr-site="${esc(a.id)}">Supprimer</button></td></tr>`).join("");
+  acces = e.acces;
+
+  $("version").textContent = e.version;
+  $("c-maj").classList.toggle("cache", !e.maj);
+  $("p-compte").textContent = e.compte ? "Compte « " + e.compte + " » enregistré : les nouvelles versions arrivent toutes seules. Pour changer de compte, saisissez-en un autre."
+    : "Avec le compte Optizien du magasin, les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »).";
+  if (e.maj) $("maj-version").textContent = "(" + e.maj.version + ")";
+  fait(7, !e.regles.vide, e.regles.vide ? "À compléter" : "Enregistrées");
+  if (!reglesTouchees && document.activeElement !== $("i-regles")) $("i-regles").value = e.regles.texte;
+  const g = e.messagerie.gmail, o = e.messagerie.outlook;
+  const nbBoites = e.messagerie.mail.length + g.comptes.length + (o.comptes || []).length;
+  $("t-mail").innerHTML = e.messagerie.mail.map(a => `<tr><td>${esc(a)}</td><td><button class="second" data-retirer-mail="${esc(a)}">Retirer</button></td></tr>`).join("");
+  fait(6, nbBoites > 0, nbBoites ? nbBoites + " boîte(s)" : "Facultatif");
+  $("t-gmail").innerHTML = g.comptes.map(a => `<tr><td>${esc(a)}</td><td><button class="second" data-retirer-gmail="${esc(a)}">Retirer</button></td></tr>`).join("");
+  if (g.client) $("gmail-client").classList.add("cache");
+  if (g.client && attenteGoogle) { attenteGoogle = false; lancerGoogle(); }
+  $("p-mail-intro").classList.toggle("cache", nbBoites > 0);
+  $("b-gmail").disabled = false;
+  if (g.connexion.en_cours) msgHtml("m6g", "Acceptez l'accès dans la page Google qui vient de s'ouvrir… Page fermée ou mauvais compte ? Recliquez sur <b>Continuer avec Google</b> ou <a href='#' id='l-annuler-g'>annulez</a>.", "att");
+  else if (g.connexion.erreur) msg("m6g", g.connexion.erreur, "err");
+  else if ($("m6g").className.includes("att")) msg("m6g", "Boîte Gmail ajoutée.", "ok");
+
+  $("t-outlook").innerHTML = (o.comptes || []).map(c => `<tr><td>${esc(c.adresse)}</td><td><button class="second" data-retirer-ms="${esc(c.id)}">Retirer</button></td></tr>`).join("")
+    || (o.actif && o.comptes === null ? '<tr><td class="petit">Lecture des comptes…</td><td></td></tr>' : "");
+  $("b-outlook").disabled = o.connexion.en_cours || o.installation_node.en_cours;
+  if (o.installation_node.erreur) attenteMs = false;
+  if (o.node && attenteMs) { attenteMs = false; lancerMs(); }
+  $("outlook-code").classList.toggle("cache", !o.connexion.code);
+  $("code-ms").textContent = o.connexion.code || "";
+  if (o.connexion.url) $("lien-ms").href = o.connexion.url;
+  if (o.installation_node.en_cours) msg("m6o", "Installation du composant Microsoft (une seule fois)… Windows peut demander une autorisation.", "att");
+  else if (o.installation_node.erreur) msg("m6o", o.installation_node.erreur, "err");
+  else if (o.connexion.en_cours && !o.connexion.code) msg("m6o", "Préparation de la connexion Microsoft…", "att");
+  else if (o.connexion.en_cours) msg("m6o", "");
+  else if (o.connexion.erreur) msg("m6o", o.connexion.erreur, "err");
+  else if ($("m6o").className.includes("att") || $("m6o").dataset.attente) { delete $("m6o").dataset.attente; msg("m6o", o.node ? "C'est fait." : "", "ok"); }
+
+  const a = e.agent;
+  $("pastille").textContent = a.en_marche ? "Agent en marche" : "Agent arrêté";
+  $("pastille").className = "pastille " + (a.en_marche ? "on" : "off");
+  $("agent-titre").textContent = a.en_marche ? "Agent en marche depuis " + a.depuis : "Agent arrêté";
+  $("agent-texte").textContent = a.en_marche
+    ? "Envoyez vos demandes dans le groupe Telegram. Vous pouvez fermer cette fenêtre : l'agent continue."
+    : "Une fois démarré, un Chrome dédié s'ouvre. L'agent s'y connecte seul aux sites de la rubrique Accès.";
+  $("b-demarrer").classList.toggle("cache", a.en_marche);
+  $("b-arreter").classList.toggle("cache", !a.en_marche);
+  if (a.arret_inattendu && !$("m6").dataset.local) { msg("m6", "L'agent s'est arrêté tout seul : ouvrez le journal ci-dessous.", "err"); $("d-journal").open = true; }
+  $("c-demarrage").checked = e.options.demarrage;
+}
+
+async function rafraichir() {
+  try { afficher(await api("/api/etat")); } catch (e) {}
+  if ($("d-journal").open) {
+    try { const j = await api("/api/journal"); $("journal").textContent = j.lignes.join("\n") || "(vide)"; } catch (e) {}
+  }
+}
+
+$("b-installer").onclick = () => action($("b-installer"), "m1", () => api("/api/installer", {}), () => "Installation lancée…");
+$("b-cle").onclick = () => { $("m2").dataset.local = 1; action($("b-cle"), "m2", () => api("/api/cle", {valeur: $("i-cle").value}),
+  () => { $("i-cle").value = ""; delete $("m2").dataset.local; return "Clé acceptée et enregistrée."; }); };
+$("b-bot").onclick = () => { $("m3").dataset.local = 1; action($("b-bot"), "m3", () => api("/api/bot", {valeur: $("i-bot").value}),
+  () => { $("i-bot").value = ""; delete $("m3").dataset.local; return "Bot enregistré."; }); };
+$("b-chercher").onclick = () => action($("b-chercher"), "m4", async () => {
+  const r = await api("/api/membres/chercher", {});
+  $("t-trouves").innerHTML = r.expediteurs.map(x =>
+    `<tr><td><b>${esc(x.nom)}</b> ${x.pseudo ? "@" + esc(x.pseudo) : ""} <span class="petit">· ${esc(x.lieu)}</span></td>
+     <td>${x.autorise ? '<span class="petit">déjà autorisé</span>' :
+       `<button data-ajouter="${esc(x.id)}" data-nom="${esc(x.nom)}">Autoriser</button>`}</td></tr>`).join("");
+  return r.expediteurs.length ? "" : "Aucun message reçu. Envoyez « bonjour » au bot ou dans le groupe, puis recommencez.";
+}, r => r);
+document.addEventListener("click", async ev => {
+  const t = ev.target;
+  if (t.dataset.ajouter) { t.disabled = true;
+    try { await api("/api/membres", {id: t.dataset.ajouter, nom: t.dataset.nom, ajouter: true}); t.outerHTML = '<span class="petit">autorisé ✓</span>'; await rafraichir(); }
+    catch (e) { msg("m4", e.message, "err"); t.disabled = false; } }
+  if (t.dataset.demande) { t.disabled = true;
+    try { await api("/api/membres/demande", {id: t.dataset.demande, accepter: !!t.dataset.accepter}); await rafraichir(); }
+    catch (e) { msg("m4", e.message, "err"); await rafraichir(); } }
+  if (t.dataset.retirer) { t.disabled = true;
+    try { await api("/api/membres", {id: t.dataset.retirer, ajouter: false}); await rafraichir(); }
+    catch (e) { msg("m4", e.message, "err"); } }
+});
+$("b-ajouter").onclick = () => action($("b-ajouter"), "m4",
+  () => api("/api/membres", {id: $("i-id").value, nom: $("i-nom").value, ajouter: true}),
+  () => { $("i-id").value = $("i-nom").value = ""; return "Personne ajoutée."; });
+$("b-demarrer").onclick = () => { delete $("m6").dataset.local; action($("b-demarrer"), "m6", () => api("/api/agent/demarrer", {}),
+  () => "Agent démarré : le Chrome de l'agent va s'ouvrir."); };
+$("b-arreter").onclick = () => { $("m6").dataset.local = 1; action($("b-arreter"), "m6", () => api("/api/agent/arreter", {}), () => "Agent arrêté."); };
+$("c-demarrage").onchange = e => action(e.target, "m7", () => api("/api/demarrage", {actif: e.target.checked}),
+  () => e.target.checked ? "L'agent démarrera avec le PC." : "Démarrage automatique désactivé.");
+$("b-bureau").onclick = () => action($("b-bureau"), "m7", () => api("/api/bureau", {}), () => "Raccourci « Optizien » créé sur le Bureau.");
+$("d-journal").ontoggle = rafraichir;
+function finMaj(r) {
+  document.body.innerHTML = `<main><section class="carte agent"><h2>Mise à jour installée (${esc(r.version)})</h2><p>Le panneau se rouvre dans quelques secondes dans une nouvelle fenêtre. Vous pouvez fermer celle-ci.</p></section></main>`;
+}
+$("b-maj").onclick = async () => {
+  $("b-maj").disabled = true; msg("m-maj", "Mise à jour en cours…", "att");
+  try { finMaj(await api("/api/maj", {})); } catch (e) { msg("m-maj", e.message, "err"); $("b-maj").disabled = false; }
+};
+$("i-maj").onchange = async ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  const b64 = btoa(Array.from(new Uint8Array(await f.arrayBuffer()), c => String.fromCharCode(c)).join(""));
+  try { finMaj(await api("/api/maj", {contenu: b64})); } catch (e) { msg("m7", e.message, "err"); }
+};
+$("b-quitter").onclick = async () => {
+  if (!confirm("Arrêter l'agent et fermer Optizien ?")) return;
+  try { await api("/api/quitter", {}); } catch (e) {}
+  document.body.innerHTML = '<main><section class="carte agent"><h2>Optizien est fermé</h2><p>L\'agent est arrêté. Vous pouvez remplacer le dossier, puis rouvrir « Ouvrir Optizien ».</p></section></main>';
+};
+
+let acces = [], siteEnCours = null, reglesTouchees = false;
+$("b-compte").onclick = () => action($("b-compte"), "m-compte",
+  () => api("/api/compte", {identifiant: $("i-compte-id").value, mot_de_passe: $("i-compte-mdp").value}),
+  () => { $("i-compte-id").value = $("i-compte-mdp").value = ""; return "Compte accepté par le site Optizien."; });
+$("b-actualiser").onclick = async () => {
+  const b = $("b-actualiser"); b.disabled = true; b.textContent = "Vérification…";
+  try { const r = await api("/api/actualiser", {}); await rafraichir();
+        b.textContent = r.maj ? "Nouvelle version trouvée ↑" : "✓ À jour"; }
+  catch (e) { b.textContent = "Erreur : " + e.message; }
+  setTimeout(() => { b.textContent = "🔄 Actualiser"; b.disabled = false; }, 2500);
+};
+$("i-regles").oninput = () => { reglesTouchees = true; };
+let dicteeAnnulee = false;
+$("b-annuler-dictee").onclick = () => { if (enregistreur) { dicteeAnnulee = true; enregistreur.stop(); } };
+let enregistreur = null, audioCtx = null, animation = null, debutDictee = 0;
+function bip(freq) {
+  try { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = freq; g.gain.value = 0.08;
+        o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.12); } catch (e) {}
+}
+function afficherOnde(flux) {
+  const analyse = audioCtx.createAnalyser(); analyse.fftSize = 1024;
+  audioCtx.createMediaStreamSource(flux).connect(analyse);
+  const donnees = new Uint8Array(analyse.fftSize), c = $("onde"), g = c.getContext("2d"), barres = [];
+  let silence = 0;
+  const dessiner = () => {
+    analyse.getByteTimeDomainData(donnees);
+    let somme = 0; for (const v of donnees) somme += (v - 128) ** 2;
+    const niveau = Math.min(1, Math.sqrt(somme / donnees.length) / 40);
+    barres.push(niveau); if (barres.length > 60) barres.shift();
+    g.clearRect(0, 0, c.width, c.height); g.fillStyle = "#e5372b";
+    barres.forEach((b, i) => { const h = Math.max(2, b * c.height); g.fillRect(i * 5, (c.height - h) / 2, 3, h); });
+    silence = niveau < 0.04 ? silence + 1 : 0;
+    $("niveau-msg").textContent = silence > 120 ? "Je n'entends rien : parlez plus près du micro." : "";
+    const s = Math.floor((Date.now() - debutDictee) / 1000);
+    $("chrono").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    animation = requestAnimationFrame(dessiner);
+  };
+  dessiner();
+}
+$("b-dicter").onclick = async () => {
+  if (enregistreur) return enregistreur.stop();
+  let flux;
+  try { flux = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true}}); }
+  catch (e) { return msg("m7r", "Micro inaccessible : autorisez le micro pour cette fenêtre, ou vérifiez qu'un micro est branché.", "err"); }
+  audioCtx = audioCtx || new AudioContext(); await audioCtx.resume();
+  const morceaux = [];
+  enregistreur = new MediaRecorder(flux);
+  enregistreur.ondataavailable = ev => morceaux.push(ev.data);
+  dicteeAnnulee = false;
+  enregistreur.onstop = async () => {
+    flux.getTracks().forEach(t => t.stop()); enregistreur = null;
+    cancelAnimationFrame(animation); $("dictee").classList.add("cache"); bip(520);
+    $("b-dicter").textContent = "🎙️ Dicter";
+    if (dicteeAnnulee) return msg("m7r", "Dictée annulée.", "ok");
+    $("b-dicter").disabled = true;
+    msg("m7r", "Transcription en cours…", "att");
+    try {
+      const octets = new Uint8Array(await new Blob(morceaux).arrayBuffer());
+      let bin = ""; for (let i = 0; i < octets.length; i += 0x8000) bin += String.fromCharCode(...octets.subarray(i, i + 0x8000));
+      const r = await api("/api/dicter", {audio: btoa(bin)});
+      if (!r.texte) return msg("m7r", "Je n'ai rien entendu.", "att");
+      const z = $("i-regles"); z.value = z.value.replace(/\s*$/, "") + "\n- " + r.texte + "\n"; reglesTouchees = true;
+      z.scrollTop = z.scrollHeight;
+      msg("m7r", "Ajouté à la fin. Relisez, puis Enregistrer les règles.", "ok");
+    } catch (e) { msg("m7r", e.message, "err"); }
+    finally { $("b-dicter").disabled = false; }
+  };
+  enregistreur.start(1000);
+  debutDictee = Date.now(); bip(880);
+  $("dictee").classList.remove("cache"); afficherOnde(flux);
+  $("b-dicter").textContent = "⏹️ Terminer la dictée";
+  msg("m7r", "", "");
+};
+$("b-regles").onclick = () => action($("b-regles"), "m7r", () => api("/api/regles", {texte: $("i-regles").value}),
+  () => { reglesTouchees = false; return "Règles enregistrées : l'agent les applique dès la prochaine demande."; });
+$("i-site-nom").onchange = () => $("i-site-autre").classList.toggle("cache", $("i-site-nom").value !== "");
+function viderSite() {
+  siteEnCours = null; for (const i of ["i-site-autre", "i-site-url", "i-site-id", "i-site-mdp"]) $(i).value = "";
+  $("i-site-mdp").placeholder = "Mot de passe"; $("i-site-id").placeholder = "Identifiant";
+  $("b-site-annuler").classList.add("cache");
+}
+$("b-site").onclick = () => action($("b-site"), "m5", () => api("/api/acces", {
+    id: siteEnCours, nom: $("i-site-nom").value || $("i-site-autre").value, url: $("i-site-url").value,
+    identifiant: $("i-site-id").value, mot_de_passe: $("i-site-mdp").value}),
+  () => { viderSite(); return "Accès enregistré dans le coffre de Windows."; });
+$("b-site-annuler").onclick = () => { viderSite(); msg("m5", ""); };
+$("b-mail").onclick = () => action($("b-mail"), "m6m", () => api("/api/mail/ajouter", {
+    adresse: $("i-mail-adresse").value, code: $("i-mail-code").value, imap: $("i-mail-imap").value, smtp: $("i-mail-smtp").value}),
+  r => { $("i-mail-adresse").value = $("i-mail-code").value = ""; return r.adresse + " est branchée."; });
+const lancerGoogle = () => { msg("m6g", "Ouverture de Google…", "att"); api("/api/gmail/ajouter", {}).catch(e => msg("m6g", e.message, "err")); };
+const lancerMs = () => { $("m6o").dataset.attente = 1; api("/api/outlook/ajouter", {}).catch(e => msg("m6o", e.message, "err")); rafraichir(); };
+$("b-gmail").onclick = () => {
+  if (etat && etat.messagerie.gmail.client) return lancerGoogle();
+  attenteGoogle = true; $("gmail-client").classList.remove("cache"); msg("m6g", "Première fois : faites le réglage unique ci-dessous, la connexion Google s'ouvrira ensuite.", "att");
+};
+function msgHtml(id, html, type) { const m = $(id); if (m.innerHTML !== html) m.innerHTML = html; m.className = "msg " + type; }
+document.addEventListener("click", ev => { if (ev.target.id === "l-annuler-g") { ev.preventDefault();
+  api("/api/gmail/annuler", {}).then(() => { msg("m6g", "Connexion Google annulée.", "ok"); rafraichir(); }); } });
+$("b-autre").onclick = () => $("mail-code").classList.toggle("cache");
+$("i-gmail-client").onchange = async ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  try { await api("/api/gmail/client", {contenu: await f.text()}); attenteGoogle = true; await rafraichir(); }
+  catch (e) { msg("m6g", e.message, "err"); }
+};
+$("b-outlook").onclick = () => {
+  if (etat && etat.messagerie.outlook.node) return lancerMs();
+  attenteMs = true; api("/api/outlook/node", {}).catch(e => msg("m6o", e.message, "err")); rafraichir();
+};
+document.addEventListener("click", async ev => {
+  const t = ev.target, d = t.dataset;
+  try {
+    if (d.modifierSite) {
+      const a = acces.find(x => x.id === d.modifierSite); siteEnCours = a.id;
+      const connu = [...$("i-site-nom").options].some(o => o.value === a.nom);
+      $("i-site-nom").value = connu ? a.nom : ""; $("i-site-autre").value = connu ? "" : a.nom;
+      $("i-site-autre").classList.toggle("cache", connu);
+      $("i-site-url").value = a.url; $("i-site-id").value = "";
+      $("i-site-id").placeholder = "Identifiant (vide = inchangé)"; $("i-site-mdp").placeholder = "Mot de passe (vide = inchangé)";
+      $("b-site-annuler").classList.remove("cache"); msg("m5", "Modification de " + a.nom, "att");
+    }
+    if (d.supprSite && confirm("Supprimer cet accès ?")) { await api("/api/acces/supprimer", {id: d.supprSite}); await rafraichir(); }
+    if (d.retirerMail && confirm("Retirer " + d.retirerMail + " ?")) { await api("/api/mail/retirer", {adresse: d.retirerMail}); await rafraichir(); }
+    if (d.retirerGmail && confirm("Retirer " + d.retirerGmail + " ?")) { await api("/api/gmail/retirer", {adresse: d.retirerGmail}); await rafraichir(); }
+    if (d.retirerMs && confirm("Retirer cette boîte ?")) { t.disabled = true; await api("/api/outlook/retirer", {id: d.retirerMs}); await rafraichir(); }
+  } catch (e) { msg(d.modifierSite || d.supprSite ? "m5" : "m6o", e.message, "err"); }
+});
+for (const [i, b] of [["i-cle", "b-cle"], ["i-bot", "b-bot"]]) $(i).onkeydown = e => { if (e.key === "Enter") $(b).click(); };
+
+rafraichir();
+setInterval(rafraichir, 2500);
+</script>
+</body>
+</html>

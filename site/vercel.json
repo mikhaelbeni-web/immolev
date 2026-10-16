@@ -1,0 +1,2 @@
+{ "cleanUrls": true,
+  "headers": [{ "source": "/telecharger/(.*)", "headers": [{ "key": "Cache-Control", "value": "private, no-store" }] }] }

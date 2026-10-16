@@ -1,0 +1,12 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Télécharger Optizien</title><link rel="stylesheet" href="/style.css"></head><body>
+<nav><a href="/">Optizien</a></nav>
+<h1>Télécharger Optizien</h1><p class="date" id="v"></p>
+<p><a id="lien" href="#"><b>Télécharger Optizien</b></a> (environ 16 Mo)</p>
+<h2>Première installation</h2><ol>
+<li>Clic droit sur le fichier téléchargé → <b>Extraire tout</b> → choisissez le Bureau → <b>Extraire</b>.</li>
+<li>Ouvrez le dossier <b>Optizien</b>, double-cliquez sur <b>Ouvrir Optizien</b>.</li>
+<li>Cliquez sur <b>Installer les composants</b> et suivez les cartes du panneau.</li>
+<li>Carte <b>Options</b> → <b>Mises à jour en ligne</b> : saisissez le même identifiant et mot de passe que pour cette page. Les versions suivantes arriveront toutes seules.</li></ol>
+<script>fetch("version.json").then(r => r.json()).then(d => { document.getElementById("v").textContent = "Version " + d.version;
+  document.getElementById("lien").href = d.fichier; });</script>
+</body></html>
