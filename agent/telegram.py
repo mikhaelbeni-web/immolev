@@ -504,8 +504,12 @@ def message_erreur(e: Exception) -> str:
                 "puis renvoyez la demande.")
     if "authentication" in texte or "invalid x-api-key" in texte:
         return "La clé API Claude est refusée : vérifiez-la dans le panneau Immolev (carte Clé API)."
-    if "overloaded" in texte or "rate limit" in texte or "rate_limit" in texte:
-        return "Claude est surchargé pour le moment : réessayez dans une minute."
+    code = getattr(e, "status_code", None)
+    if code == 429 or "rate limit" in texte or "rate_limit" in texte:
+        return ("Limite de débit du compte Claude atteinte (trop de texte lu d'un coup) : j'ai attendu près de deux minutes sans succès. "
+                "Renvoie la demande, si possible plus ciblée (une seule boîte mail, une période).")
+    if code == 529 or "overloaded" in texte:
+        return "Claude est surchargé chez Anthropic : j'ai réessayé pendant près de deux minutes. Renvoie la demande un peu plus tard."
     return f"Erreur : {type(e).__name__} (détails dans le journal de l'agent)."
 
 

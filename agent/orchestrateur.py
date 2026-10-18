@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -25,6 +26,18 @@ PRIX = {
 REGLAGES_DEFAUT = {"modele": "standard", "plafond": 1.0}  # plafond en € (≈ $) par demande
 MODELE = MODELES[REGLAGES_DEFAUT["modele"]]
 MAX_TOURS = 60  # au-delà, mieux vaut découper (ajouter_tache)
+ATTENTES_SURCHARGE = (15, 30, 60)  # secondes, après les réessais rapides du SDK : Claude surchargé (529) ou débit dépassé (429)
+
+
+def _appeler(client: Any, **kwargs: Any) -> Any:
+    """Un appel à Claude qui patiente quand l'API est surchargée, au lieu d'abandonner la demande."""
+    for attente in (*ATTENTES_SURCHARGE, None):
+        try:
+            return client.beta.messages.create(**kwargs)
+        except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
+            if attente is None or getattr(e, "status_code", 0) not in (429, 500, 503, 529):
+                raise
+            time.sleep(attente)
 # Les vieilles lectures de page sont retirées de l'historique quand il grossit (le modèle garde ses appels).
 CONTEXTE = {"edits": [{
     "type": "clear_tool_uses_20250919",
@@ -225,7 +238,7 @@ def systeme() -> str:
 
 
 def traiter(demande: str, outils: dict[str, Outil], client: anthropic.Anthropic | None = None) -> Resultat:
-    client = client or anthropic.Anthropic()
+    client = client or anthropic.Anthropic(max_retries=4)
     reg = reglages()
     modele = MODELES[reg["modele"]]
     messages: list[dict[str, Any]] = [{"role": "user", "content": demande}]
@@ -242,14 +255,14 @@ def traiter(demande: str, outils: dict[str, Outil], client: anthropic.Anthropic 
     depense = 0.0
     for _ in range(MAX_TOURS):
         try:
-            response = client.beta.messages.create(**parametres, messages=messages)
+            response = _appeler(client, **parametres, messages=messages)
         except anthropic.BadRequestError:
             if "fallbacks" not in parametres and "context_management" not in parametres:
                 raise
             # option bêta refusée par l'API : on continue sans elle (le cache, lui, reste)
             for cle in ("fallbacks", "context_management", "betas"):
                 parametres.pop(cle, None)
-            response = client.beta.messages.create(**parametres, messages=messages)
+            response = _appeler(client, **parametres, messages=messages)
         depense += cout(getattr(response, "model", None) or modele, getattr(response, "usage", None))
         journal_cout(demande, depense)
         if response.stop_reason == "refusal":

@@ -80,6 +80,7 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', type);
   res.setHeader('Cache-Control', 'no-store');
   if (amont.headers.get('request-id')) res.setHeader('request-id', amont.headers.get('request-id'));
+  for (const h of ['retry-after', 'x-should-retry']) if (amont.headers.get(h)) res.setHeader(h, amont.headers.get(h));  // le SDK règle ses réessais dessus
   if (type.includes('text/event-stream')) {  // flux : transmis au fil de l'eau
     for await (const bloc of amont.body) res.write(bloc);
     res.end();
