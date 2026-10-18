@@ -79,5 +79,5 @@ export default async function middleware(requete) {
   const page = url.pathname === '/telecharger' || url.pathname === '/telecharger/' || url.pathname === '/telecharger/index.html';
   if (page && b === null) return vers('/espace');
   // Fichiers (version.json, zip) : 401 sans fenêtre de connexion du navigateur.
-  return new Response('Accès réservé aux utilisateurs d'Immolev.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+  return new Response("Accès réservé aux utilisateurs d'Immolev.", { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
