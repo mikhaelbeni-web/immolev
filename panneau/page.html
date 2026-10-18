@@ -167,7 +167,7 @@
   <button class="second" id="b-actualiser" style="margin-left:auto">Actualiser</button>
   <span id="pastille" class="pastille off" style="margin-left:0">Agent arrêté</span>
 </header>
-<nav class="onglets" id="onglets"><button class="onglet" data-onglet="agent" id="ong-agent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg><span>Agent</span><i class="point cache"></i></button><button class="onglet" data-onglet="demarrage" id="ong-demarrage"><svg viewBox="0 0 24 24"><path d="M12 3c3 2 5 5 5 9l-2 3H9l-2-3c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M9 18l-1 3M15 18l1 3"/></svg><span>Démarrage</span><i class="point cache"></i></button><button class="onglet" data-onglet="acces" id="ong-acces"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg><span>Accès et mails</span><i class="point cache"></i></button><button class="onglet" data-onglet="savoir" id="ong-savoir"><svg viewBox="0 0 24 24"><path d="M4 5.5C6 4.5 9 4.5 12 6c3-1.5 6-1.5 8-.5V18c-2-1-5-1-8 .5-3-1.5-6-1.5-8-.5z"/><path d="M12 6v12.5"/></svg><span>Savoir du magasin</span><i class="point cache"></i></button><button class="onglet" data-onglet="reglages" id="ong-reglages"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Réglages</span><i class="point cache"></i></button></nav>
+<nav class="onglets" id="onglets"><button class="onglet" data-onglet="agent" id="ong-agent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg><span>Agent</span><i class="point cache"></i></button><button class="onglet" data-onglet="demarrage" id="ong-demarrage"><svg viewBox="0 0 24 24"><path d="M12 3c3 2 5 5 5 9l-2 3H9l-2-3c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M9 18l-1 3M15 18l1 3"/></svg><span>Démarrage</span><i class="point cache"></i></button><button class="onglet" data-onglet="acces" id="ong-acces"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg><span>Accès et mails</span><i class="point cache"></i></button><button class="onglet" data-onglet="savoir" id="ong-savoir"><svg viewBox="0 0 24 24"><path d="M4 5.5C6 4.5 9 4.5 12 6c3-1.5 6-1.5 8-.5V18c-2-1-5-1-8 .5-3-1.5-6-1.5-8-.5z"/><path d="M12 6v12.5"/></svg><span>Savoir de l'agent</span><i class="point cache"></i></button><button class="onglet" data-onglet="reglages" id="ong-reglages"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Réglages</span><i class="point cache"></i></button></nav>
 <main>
   <section class="carte bandeau cache" id="c-maj">
     <div class="ligne"><div style="flex:1"><b>Nouvelle version disponible</b> <span class="petit" id="maj-version"></span><br>
@@ -274,8 +274,8 @@
       <table id="t-acces"></table>
       <div class="ligne" style="margin-top:10px">
         <select id="i-site-nom" class="champ">
-          <option>MyEasyOptic</option><option>Almerys</option><option>Viamedis</option><option>SP Santé</option>
-          <option>iSanté</option><option>TP+</option><option>Génération</option><option>Mercer</option><option>Ociane</option>
+          <option>Logiciel copropriété</option><option>Logiciel gestion locative</option><option>PMS hôtel</option><option>Logiciel comptabilité</option>
+          <option>Banque pro</option><option>Banque perso</option><option>Impots particulier</option><option>Impots professionnel</option><option>URSSAF</option>
           <option value="">Autre…</option>
         </select>
         <input type="text" id="i-site-autre" class="cache" placeholder="Nom du site">
@@ -364,7 +364,7 @@
   <section class="carte">
     <div class="titre"><span class="num" id="n7">7</span><h2>Règles du gestionnaire</h2><span class="etat" id="e7"></span></div>
     <div class="corps">
-      <p class="petit">Tout ce que l'agent doit savoir pour éviter les questions : mutuelles et portails, habitudes de saisie, qui valide quoi… Remplacez les exemples « (ex.) ». Aucune donnée personnelle ici. Sur Telegram, « retiens : … » ajoute une règle après confirmation.</p>
+      <p class="petit">Tout ce que l'agent doit savoir pour éviter les questions : biens et opérations suivis, habitudes de traitement, qui valide quoi… Remplacez les exemples « (ex.) ». Aucune donnée personnelle ici. Sur Telegram, « retiens : … » ajoute une règle après confirmation.</p>
       <textarea id="i-regles" rows="14" spellcheck="true"></textarea>
       <div class="ligne" style="margin-top:10px">
         <div id="dictee-regles"></div>
@@ -375,7 +375,7 @@
   <section class="carte">
     <div class="titre"><span class="num" id="n8">8</span><h2>Questionnaire du gestionnaire</h2><span class="etat" id="e8"></span></div>
     <div class="corps">
-      <p class="petit">Plus l'agent connaît votre magasin, moins il pose de questions. Répondez à ce que vous pouvez, en une ou deux lignes ; il demandera le reste sur Telegram au fil des tâches et complétera ce questionnaire après votre accord. Aucune donnée personnelle ici.</p>
+      <p class="petit">Plus l'agent connaît votre activité, moins il pose de questions. Répondez à ce que vous pouvez, en une ou deux lignes ; il demandera le reste sur Telegram au fil des tâches et complétera ce questionnaire après votre accord. Aucune donnée personnelle ici.</p>
       <div class="barre fiche-barre"><div id="fiche-progres"></div></div>
       <div id="fiche-questions"></div>
       <div class="ligne" style="margin-top:12px"><button id="b-fiche" style="margin-left:auto">Enregistrer le questionnaire</button></div>
@@ -383,7 +383,7 @@
       <details><summary id="proc-titre">Procédures apprises par l'agent</summary>
         <p class="petit">Quand l'agent réussit une tâche sur un site, il propose d'en retenir les étapes exactes ; il les suit ensuite sans chercher. Supprimez une procédure si elle n'est plus bonne.</p>
         <div id="proc-liste"></div></details>
-      <details><summary>Ce que l'agent sait déjà (réglementation optique, MyEasyOptic)</summary>
+      <details><summary>Ce que l'agent sait déjà (immobilier, copropriété, hôtellerie, fiscalité, vie personnelle)</summary>
         <pre class="savoir" id="savoir"></pre></details>
     </div>
   </section>

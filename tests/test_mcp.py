@@ -56,8 +56,8 @@ def test_connecteur_gmail_immolev():
         outils = c.outils()
         assert not outils["gmail__chercher_mails"].ecriture and not outils["gmail__lire_mail"].ecriture
         assert outils["gmail__envoyer_mail"].ecriture and outils["gmail__creer_brouillon"].ecriture
-        assert "Rejet facture 456" in outils["gmail__chercher_mails"].executer(requete="viamedis")
-        assert "accord.pdf" in outils["gmail__lire_mail"].executer(mail_id="m1")
+        assert "Facture F-456" in outils["gmail__chercher_mails"].executer(requete="bati-sud")
+        assert "appel.pdf" in outils["gmail__lire_mail"].executer(mail_id="m1")
     finally:
         c.fermer()
 

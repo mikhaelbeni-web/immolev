@@ -95,8 +95,8 @@ class BoiteFactice:
     """Pour les tests et les démonstrations, sans compte Google."""
 
     def __init__(self) -> None:
-        self.mails = {"m1": {"de": "pec@almerys.fr", "sujet": "Accord PEC 123", "date": "15 Oct 2026", "texte": "Accord 180 EUR", "pieces_jointes": ["accord.pdf"]},
-                      "m2": {"de": "noreply@viamedis.fr", "sujet": "Rejet facture 456", "date": "14 Oct 2026", "texte": "Motif : droits fermés", "pieces_jointes": []}}
+        self.mails = {"m1": {"de": "compta@syndic-exemple.fr", "sujet": "Appel de fonds T4", "date": "15 Oct 2026", "texte": "Appel de fonds 1 250 EUR", "pieces_jointes": ["appel.pdf"]},
+                      "m2": {"de": "factures@bati-sud.fr", "sujet": "Facture F-456", "date": "14 Oct 2026", "texte": "Échéance au 31/10", "pieces_jointes": []}}
         self.envoyes: list[str] = []
 
     def chercher(self, requete: str, nombre: int) -> list[dict[str, str]]:
@@ -116,7 +116,7 @@ class BoiteFactice:
 
 def creer_serveur(boites: "Boite | dict[str, Boite]", nom: str = "gmail") -> MCPServer:
     if not isinstance(boites, dict):
-        boites = {"magasin": boites}
+        boites = {"principale": boites}
     serveur = MCPServer(f"{nom}-immolev")
     lecture = ToolAnnotations(read_only_hint=True)
     noms = ", ".join(boites)
@@ -136,7 +136,7 @@ def creer_serveur(boites: "Boite | dict[str, Boite]", nom: str = "gmail") -> MCP
 
     @serveur.tool(annotations=lecture)
     def chercher_mails(requete: str, nombre: int = 10, compte: str = "") -> str:
-        """Cherche des mails (boîte Gmail : syntaxe Gmail, ex. 'from:almerys newer_than:7d' ; autre boîte : un mot du mail). compte : adresse de la boîte."""
+        """Cherche des mails (boîte Gmail : syntaxe Gmail, ex. 'from:syndic newer_than:7d' ; autre boîte : un mot du mail). compte : adresse de la boîte."""
         return json.dumps(boite(compte).chercher(requete, min(nombre, 50)), ensure_ascii=False)
 
     @serveur.tool(annotations=lecture)

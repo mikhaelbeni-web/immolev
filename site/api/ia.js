@@ -1,6 +1,6 @@
 // Passerelle Claude d'Immolev.
-// Le logiciel des magasins appelle ce serveur avec le compte Immolev du magasin (en-tête x-api-key = "identifiant:motdepasse").
-// La clé Anthropic n'existe qu'ici : variable d'environnement Vercel ANTHROPIC_API_KEY (et ANTHROPIC_WORKSPACE_ID si la clé est multi-espaces). Aucun magasin ne la voit.
+// Le logiciel installé appelle ce serveur avec le compte Immolev de l'utilisateur (en-tête x-api-key = "identifiant:motdepasse").
+// La clé Anthropic n'existe qu'ici : variable d'environnement Vercel ANTHROPIC_API_KEY (et ANTHROPIC_WORKSPACE_ID si la clé est multi-espaces). Aucun utilisateur ne la voit.
 //   POST /api/ia/v1/messages  -> (réécrit en /api/ia?p=v1&p=messages) transmis à Anthropic (modèles autorisés seulement)
 //   GET  /api/ia/ping         -> {"ok":true,"cle":true|false} : le compte est accepté, le serveur a-t-il sa clé ?
 // Comptes : variable IMMOLEV_COMPTES = "identifiant:sha256(identifiant:motdepasse);…" (la même que pour /telecharger).

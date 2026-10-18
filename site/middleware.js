@@ -1,4 +1,4 @@
-// Espace magasins : page de connexion /espace (identifiant + mot de passe) qui pose un cookie de session signé.
+// Espace client : page de connexion /espace (identifiant + mot de passe) qui pose un cookie de session signé.
 // Le logiciel (mises à jour en ligne) continue d'envoyer l'entête « Authorization: Basic ».
 // Comptes dans la variable Vercel IMMOLEV_COMPTES = "identifiant:sha256(identifiant:motdepasse);…"
 // Clé de signature : IMMOLEV_SECRET si définie, sinon dérivée des comptes.
@@ -79,5 +79,5 @@ export default async function middleware(requete) {
   const page = url.pathname === '/telecharger' || url.pathname === '/telecharger/' || url.pathname === '/telecharger/index.html';
   if (page && b === null) return vers('/espace');
   // Fichiers (version.json, zip) : 401 sans fenêtre de connexion du navigateur.
-  return new Response('Accès réservé aux magasins Immolev.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+  return new Response('Accès réservé aux utilisateurs d'Immolev.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
