@@ -6,7 +6,7 @@ le seul domaine enregistré : le modèle ne lit ni ne voit jamais un mot de pass
 
 Règles :
 - lire_page, aller_a, suivre_lien, remplir_champ : sans confirmation (rien n'est enregistré).
-- cliquer_bouton : confirmation de l'opticien, car un bouton peut enregistrer ou envoyer.
+- cliquer_bouton : confirmation du gestionnaire, car un bouton peut enregistrer ou envoyer.
 - cliquer_bouton_sans_risque : sans confirmation, seulement pour les boutons dont le libellé est
   dans BOUTONS_SANS_RISQUE (rechercher, actualiser, afficher…).
 Les pages construites en cadres (iframes) sont lues aussi : leurs éléments ont un numéro « cadre.n ».
@@ -63,7 +63,7 @@ BOUTONS_SANS_RISQUE = [r"^(re)?cherch", r"^actualis", r"^rafra[iî]ch", r"^affic
                        r"^suivant$", r"^pr[ée]c[ée]dent$", r"^ok$",
                        r"^(se |me )?connecter$", r"^connexion$", r"^s'identifier$", r"^v[ée]rifier( le code)?$",
                        r"^valider (le )?code$",
-                       # bandeaux de cookies : toujours acceptés (consigne de l'opticien)
+                       # bandeaux de cookies : toujours acceptés (consigne du gestionnaire)
                        r"^(tout |tous )accepter$", r"^accepter (tout|tous|tous les cookies|les cookies|et fermer|et continuer)$", r"^tout accepter$",
                        r"^j'accepte (tout|les cookies)$",
                        r"^(accept|allow) all( cookies)?$", r"^(i )?agree$", r"^tout autoriser$", r"^autoriser (tous )?les cookies$"]
@@ -110,7 +110,7 @@ class Navigateur:
         if executable:
             options["executable_path"] = executable
         else:
-            options["channel"] = "chrome"  # le Chrome installé sur le PC du magasin
+            options["channel"] = "chrome"  # le Chrome installé sur le PC du gestionnaire
             options["chromium_sandbox"] = True  # Playwright ajoute --no-sandbox par défaut
         contexte = pw.chromium.launch_persistent_context(str(profil), **options)
         page = contexte.pages[0] if contexte.pages else contexte.new_page()
@@ -239,7 +239,7 @@ class Navigateur:
         if fiche.get("mode") == "gmail":
             self.carte()
             return (f"{fiche['nom']} se connecte avec Google, sans mot de passe. Si la page demande de s'identifier, clique sur "
-                    "« Se connecter avec Google » (confirmation de l'équipe d'abord), choisis le compte Google " + (fiche.get("gmail") or "de l'agent") + " (si absent de la liste, demande à l'équipe de le connecter dans le panneau Optizien), puis relis la page. "
+                    "« Se connecter avec Google » (confirmation de l'équipe d'abord), choisis le compte Google " + (fiche.get("gmail") or "de l'agent") + " (si absent de la liste, demande à l'équipe de le connecter dans le panneau Immolev), puis relis la page. "
                     "Si Google refuse ou demande un code, demande-le à l'équipe. Page actuelle :\n" + self.lire_page())
         identifiant, mot_de_passe = acces.identifiants(fiche["id"])
         mdp_tape = False
@@ -266,7 +266,7 @@ class Navigateur:
         cadre, etat = self._formulaire_connexion(fiche["domaine"])
         if cadre is not None and etat["mdp"]:
             return (f"Connexion à {fiche['nom']} refusée : le site redemande le mot de passe. Les identifiants du coffre "
-                    "sont peut-être faux ou expirés : l'opticien doit les corriger dans le panneau Optizien.")
+                    "sont peut-être faux ou expirés : le gestionnaire doit les corriger dans le panneau Immolev.")
         if cadre is not None and etat["code"] and mdp_tape:
             self.carte()
             return (f"{fiche['nom']} demande un code de vérification (SMS ou mail). Demande-le à l'équipe dans ta réponse ; "
@@ -288,7 +288,7 @@ class Navigateur:
         return self.lire_page()
 
     def apercu_formulaire(self, ref: str) -> str:
-        """Ce que l'opticien voit avant de confirmer un clic : le bouton et les champs de son formulaire."""
+        """Ce que le gestionnaire voit avant de confirmer un clic : le bouton et les champs de son formulaire."""
         el = self._element(ref)
         return el.evaluate(r"""b => {
           const zone = b.closest('form') || document.body;
@@ -315,7 +315,7 @@ def outils_navigateur(nav: Navigateur) -> dict[str, Outil]:
         Outil("lire_page", "Lit la page affichée dans Chrome : URL, champs avec leurs valeurs, boutons, liens, texte.", {}, False, nav.lire_page),
         Outil("chercher_dans_page", "Cherche un mot dans la page affichée (éléments et lignes de texte) sans tout relire : moins cher que lire_page sur une longue page.",
               {"texte": {"type": "string"}}, False, nav.chercher_dans_page),
-        Outil("aller_a", "Ouvre n'importe quelle adresse dans Chrome (MyEasyOptic, portail de tiers payant, messagerie, tout autre site).",
+        Outil("aller_a", "Ouvre n'importe quelle adresse dans Chrome (logiciel de gestion, banque, impots.gouv, messagerie, tout autre site).",
               {"url": {"type": "string"}}, False, nav.aller_a),
         Outil("suivre_lien", "Clique sur un lien ou un onglet pour naviguer. Refusé sur un bouton.", ref, False, nav.suivre_lien),
         Outil("remplir_champ", "Remplit un champ, une liste ou une case de la page (non enregistré tant qu'aucun bouton n'est cliqué). Jamais de mot de passe.",
@@ -323,10 +323,10 @@ def outils_navigateur(nav: Navigateur) -> dict[str, Outil]:
         Outil("cliquer_bouton_sans_risque", "Clique sans confirmation sur un bouton qui ne modifie rien (Rechercher, Actualiser, Afficher, Filtrer, Suivant…). Refusé pour tout autre bouton.",
               ref, False, nav.cliquer_bouton_sans_risque),
         Outil("cliquer_bouton", "Clique sur un bouton (enregistrer, valider, envoyer, rechercher…). Après le clic, vérifier la page.", ref, True, nav.cliquer_bouton),
-        Outil("se_connecter", "Se connecte à un site du coffre des accès (MyEasyOptic, portail de tiers payant…) quand une page demande de s'identifier. "
-              "Tape l'identifiant et le mot de passe enregistrés par l'opticien sans que tu les voies ; pour un site en mode Gmail, ouvre la page et tu cliques « Se connecter avec Google » avec le Gmail enregistré pour ce site. Ne demande jamais d'identifiants à l'équipe.",
-              {"site": {"type": "string", "description": "Nom du site, ex. MyEasyOptic, Almerys, Viamedis"}}, False, nav.se_connecter),
-        Outil("relever_ecran", "Mémorise la structure de l'écran actuel sous un nom (ex. 'myeasyoptic_fiche_client') pour en faire une procédure. Aucune valeur n'est enregistrée.",
+        Outil("se_connecter", "Se connecte à un site du coffre des accès (logiciel de copropriété, banque, impots.gouv…) quand une page demande de s'identifier. "
+              "Tape l'identifiant et le mot de passe enregistrés par le gestionnaire sans que tu les voies ; pour un site en mode Gmail, ouvre la page et tu cliques « Se connecter avec Google » avec le Gmail enregistré pour ce site. Ne demande jamais d'identifiants à l'équipe.",
+              {"site": {"type": "string", "description": "Nom du site, ex. Banque pro, Impots pro, Logiciel copro"}}, False, nav.se_connecter),
+        Outil("relever_ecran", "Mémorise la structure de l'écran actuel sous un nom (ex. 'copro_fiche_lot') pour en faire une procédure. Aucune valeur n'est enregistrée.",
               {"nom": {"type": "string"}}, False, nav.relever_ecran),
     ]
     return {o.nom: o for o in outils}

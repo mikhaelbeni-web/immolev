@@ -1,4 +1,4 @@
-# Plateforme agent Optizien : module 1, saisie d'ordonnance
+# Plateforme agent Immolev : module 1, saisie d'ordonnance
 
 Photo d'ordonnance optique → données structurées → contrôles automatiques → relecture et validation par l'opticien → envoi direct au logiciel principal d'optique. La plateforme ne stocke aucune donnée patient ; elle garde seulement un journal d'actions sans donnée médicale.
 
@@ -17,7 +17,7 @@ La marche à suivre complète est dans [MARCHE-A-SUIVRE.md](MARCHE-A-SUIVRE.md),
 | `agent/orchestrateur.py` | Claude comprend la demande, exécute les lectures, met les écritures en attente de confirmation |
 | `agent/navigateur.py` | Pilotage de Chrome sans curseur : l'agent lit les pages, suit les liens, remplit les champs ; tout clic de bouton attend la confirmation ; relevé des écrans (structure sans valeurs) dans `procedures/ecrans/` |
 | `agent/connecteurs_mcp.py` | Connecteurs MCP (Outlook/Hotmail, Gmail, autres) : outils découverts automatiquement, lecture libre seulement si déclarée, tout le reste sur confirmation |
-| `connecteurs/gmail_mcp.py` | Connecteur Gmail d'Optizien (serveur MCP) ; mode démonstration sans compte avec `GMAIL_FAUX=1` |
+| `connecteurs/gmail_mcp.py` | Connecteur Gmail d'Immolev (serveur MCP) ; mode démonstration sans compte avec `GMAIL_FAUX=1` |
 | `agent/outils.py` | Catalogue d'actions : lire et corriger une ordonnance, saisir dans MyEasyOptic ; recherche client et droits prévues mais pas encore branchées |
 | `tests/` | 24 tests (contrôles, transposition, page web, orchestrateur, bot Telegram, pilotage d'un vrai Chrome sur un faux logiciel, connecteur MCP avec un faux serveur de messagerie) |
 
@@ -58,7 +58,7 @@ La messagerie est **au choix de l'opticien** : `installer.bat` (via `configurer.
 
 | Messagerie | Connecteur | Ce qu'il fait | Prérequis |
 |---|---|---|---|
-| Gmail | `connecteurs/gmail_mcp.py`, écrit pour Optizien (API Gmail officielle) | Chercher, lire (texte + noms des pièces jointes) sans confirmation ; brouillon et envoi sur confirmation | Un client OAuth « Application de bureau » dans Google Cloud, fichier `gmail_client_secret.json` à côté de l'agent. Jeton rangé dans le coffre Windows |
+| Gmail | `connecteurs/gmail_mcp.py`, écrit pour Immolev (API Gmail officielle) | Chercher, lire (texte + noms des pièces jointes) sans confirmation ; brouillon et envoi sur confirmation | Un client OAuth « Application de bureau » dans Google Cloud, fichier `gmail_client_secret.json` à côté de l'agent. Jeton rangé dans le coffre Windows |
 | Hotmail / Outlook.com | `@softeria/ms-365-mcp-server` (open source) | Mails, dossiers, pièces jointes, agenda ; écritures sur confirmation | Node.js sur le PC. Noms des outils en lecture à vérifier au premier lancement (confiance moyenne) |
 | Microsoft 365 pro | Même connecteur, option `--org-mode` | Idem | Idem |
 

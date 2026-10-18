@@ -1,7 +1,7 @@
 """Visage et prénom de l'agent : choisis dans le panneau, appliqués au bot Telegram (photo + nom).
 
 Choix enregistré dans <données>/visage.json : {"id": "lea", "nom": "Léa"}.
-Images : panneau/avatars/<id>.jpg (portraits 3D fournis par Optizien, listés dans liste.json).
+Images : panneau/avatars/<id>.jpg (portraits 3D fournis par Immolev, listés dans liste.json).
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def liste() -> list[dict]:
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else []
 
 
-PERSO = "perso"  # image importée par le magasin : <données>/visage-perso.jpg
+PERSO = "perso"  # image importée par le gestionnaire : <données>/visage-perso.jpg
 
 
 def image(ident: str, donnees: Path | None = None) -> bytes | None:
@@ -57,7 +57,7 @@ def _telegram(jeton: str, methode: str, corps: bytes, type_: str) -> dict:
 
 
 def _photo_bot(jeton: str, jpg: bytes) -> dict:
-    limite = "----optizien" + secrets.token_hex(8)
+    limite = "----immolev" + secrets.token_hex(8)
     photo = json.dumps({"type": "static", "photo": "attach://visage"})
     corps = (f"--{limite}\r\nContent-Disposition: form-data; name=\"photo\"\r\n\r\n{photo}\r\n"
              f"--{limite}\r\nContent-Disposition: form-data; name=\"visage\"; filename=\"visage.jpg\"\r\n"
@@ -71,7 +71,7 @@ def _nom_bot(jeton: str, nom: str) -> dict:
 
 
 def importer(donnees: Path, jpg: bytes) -> None:
-    """Image du magasin (déjà recadrée en carré JPEG par le panneau)."""
+    """Image du gestionnaire (déjà recadrée en carré JPEG par le panneau)."""
     if jpg[:2] != b"\xff\xd8" or len(jpg) > 5_000_000:
         raise ValueError("Image refusée : il faut une photo JPEG de moins de 5 Mo.")
     donnees.mkdir(parents=True, exist_ok=True)

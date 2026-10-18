@@ -1,7 +1,7 @@
-"""Coffre des accès aux sites (MyEasyOptic, portails de tiers payant…).
+"""Coffre des accès aux sites (logiciel de copropriété, banque, impots.gouv, portails…).
 
 Saisis une fois dans le panneau. Identifiant et mot de passe vont dans le coffre Windows (service
-« optizien-acces ») ; seuls le nom, l'adresse et le domaine sont dans acces.json. L'agent ne voit
+« immolev-acces ») ; seuls le nom, l'adresse et le domaine sont dans acces.json. L'agent ne voit
 jamais le mot de passe : Navigateur.se_connecter le tape directement dans la page, et seulement
 sur le domaine enregistré.
 """
@@ -14,12 +14,12 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
-SERVICE = "optizien-acces"
+SERVICE = "immolev-acces"
 
 
 def dossier_donnees() -> Path:
-    d = Path(os.environ.get("OPTIZIEN_DONNEES") or
-             Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share") / "Optizien")
+    d = Path(os.environ.get("IMMOLEV_DONNEES") or
+             Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share") / "Immolev")
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -29,7 +29,7 @@ def _fichier() -> Path:
 
 
 def domaine_de(url: str) -> str:
-    """Domaine enregistrable approché : app.myeasyoptic.fr → myeasyoptic.fr."""
+    """Domaine enregistrable approché : app.monsyndic.fr → monsyndic.fr."""
     hote = (urlparse(url if "://" in url else "https://" + url).hostname or "").lower()
     if not hote or "." not in hote:
         raise ValueError("Adresse invalide : copiez l'adresse complète de la page de connexion.")
@@ -110,7 +110,7 @@ def supprimer(ident: str) -> None:
 def identifiants(ident: str) -> tuple[str, str]:
     brut = _keyring().get_password(SERVICE, ident)
     if not brut:
-        raise LookupError("Identifiants absents du coffre : ressaisissez-les dans le panneau Optizien.")
+        raise LookupError("Identifiants absents du coffre : ressaisissez-les dans le panneau Immolev.")
     d = json.loads(brut)
     return d["identifiant"], d["mot_de_passe"]
 
@@ -132,7 +132,7 @@ def trouver(site: str) -> dict:
     noms = ", ".join(s["nom"] for s in sites) or "aucun"
     raise LookupError(f"Site « {site} » absent du coffre des accès (enregistrés : {noms}). "
                       "Ne demande pas l'adresse à l'équipe : dis-lui d'ajouter ce site (adresse, identifiant, mot de passe) "
-                      "dans le panneau Optizien, carte « Accès aux sites ».")
+                      "dans le panneau Immolev, carte « Accès aux sites ».")
 
 
 def _masquer(identifiant: str) -> str:

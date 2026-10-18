@@ -1,12 +1,12 @@
-// Passerelle Claude d'Optizien.
-// Le logiciel des magasins appelle ce serveur avec le compte Optizien du magasin (en-tête x-api-key = "identifiant:motdepasse").
+// Passerelle Claude d'Immolev.
+// Le logiciel des magasins appelle ce serveur avec le compte Immolev du magasin (en-tête x-api-key = "identifiant:motdepasse").
 // La clé Anthropic n'existe qu'ici : variable d'environnement Vercel ANTHROPIC_API_KEY (et ANTHROPIC_WORKSPACE_ID si la clé est multi-espaces). Aucun magasin ne la voit.
 //   POST /api/ia/v1/messages  -> (réécrit en /api/ia?p=v1&p=messages) transmis à Anthropic (modèles autorisés seulement)
 //   GET  /api/ia/ping         -> {"ok":true,"cle":true|false} : le compte est accepté, le serveur a-t-il sa clé ?
-// Comptes : variable OPTIZIEN_COMPTES = "identifiant:sha256(identifiant:motdepasse);…" (la même que pour /telecharger).
+// Comptes : variable IMMOLEV_COMPTES = "identifiant:sha256(identifiant:motdepasse);…" (la même que pour /telecharger).
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-const MODELES = new Set((process.env.OPTIZIEN_MODELES || 'claude-haiku-5-5,claude-sonnet-5-5,claude-opus-5-5').split(',').map((m) => m.trim()));
+const MODELES = new Set((process.env.IMMOLEV_MODELES || 'claude-haiku-5-5,claude-sonnet-5-5,claude-opus-5-5').split(',').map((m) => m.trim()));
 const MAX_OCTETS = 4 * 1024 * 1024;  // limite des fonctions Vercel : 4,5 Mo
 const AMONT = () => (process.env.ANTHROPIC_UPSTREAM || 'https://api.anthropic.com').replace(/\/$/, '');
 
@@ -17,7 +17,7 @@ function compte(req) {
   const i = brut.indexOf(':');
   if (i < 1) return null;
   const id = brut.slice(0, i), mdp = brut.slice(i + 1);
-  const comptes = Object.fromEntries((process.env.OPTIZIEN_COMPTES || '').split(';').filter(Boolean).map((c) => c.split(':')));
+  const comptes = Object.fromEntries((process.env.IMMOLEV_COMPTES || '').split(';').filter(Boolean).map((c) => c.split(':')));
   const attendu = comptes[id];
   const empreinte = createHash('sha256').update(`${id}:${mdp}`).digest('hex');
   return attendu && egal(attendu, empreinte) ? id : null;
@@ -49,12 +49,12 @@ export default async function handler(req, res) {
   const chemin = morceaux.length ? '/' + morceaux.join('/') : url.pathname.replace(/^\/api\/ia/, '').replace(/\/$/, '');
   url.searchParams.delete('p');
   const id = compte(req);
-  if (!id) return erreur(res, 401, 'authentication_error', "Compte Optizien refusé : vérifiez l'identifiant et le mot de passe.");
+  if (!id) return erreur(res, 401, 'authentication_error', "Compte Immolev refusé : vérifiez l'identifiant et le mot de passe.");
 
   if (req.method === 'GET' && chemin === '/ping') return repondre(res, 200, { ok: true, cle: !!process.env.ANTHROPIC_API_KEY });
   if (req.method !== 'POST' || chemin !== '/v1/messages') return erreur(res, 404, 'not_found_error', `Route non autorisée (${req.method} ${chemin || '/'}).`);
   const cle = process.env.ANTHROPIC_API_KEY;
-  if (!cle) return erreur(res, 503, 'api_error', "Le serveur Optizien n'a pas encore sa clé IA : prévenez Optizien.");
+  if (!cle) return erreur(res, 503, 'api_error', "Le serveur Immolev n'a pas encore sa clé IA : prévenez Immolev.");
 
   const corps = await lire(req);
   if (!corps) return erreur(res, 413, 'request_too_large', 'Demande trop volumineuse (4 Mo maximum).');
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     amont = await fetch(`${AMONT()}/v1/messages${url.search}`, { method: 'POST', headers: entetes, body: corps });
   } catch (e) {
     console.log(JSON.stringify({ compte: id, modele, statut: 'injoignable' }));
-    return erreur(res, 502, 'api_error', "Claude est injoignable depuis le serveur Optizien.");
+    return erreur(res, 502, 'api_error', "Claude est injoignable depuis le serveur Immolev.");
   }
   const type = amont.headers.get('content-type') || 'application/json';
   res.statusCode = amont.status;

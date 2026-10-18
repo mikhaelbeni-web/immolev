@@ -16,7 +16,7 @@ class Site(BaseHTTPRequestHandler):
             self.send_response(401)
             self.end_headers()
             return
-        corps = json.dumps({"version": "9", "fichier": "Optizien-v9.zip"}).encode() if self.path.endswith("version.json") else b"ZIP"
+        corps = json.dumps({"version": "9", "fichier": "Immolev-v9.zip"}).encode() if self.path.endswith("version.json") else b"ZIP"
         self.send_response(200)
         self.end_headers()
         self.wfile.write(corps)
@@ -36,7 +36,7 @@ def site():
 def test_version_et_telechargement(site, tmp_path):
     bon = {"identifiant": "magasin", "mot_de_passe": "secret"}
     trouve = maj.chercher_en_ligne(bon, "6", site)
-    assert trouve["version"] == "9" and trouve["url"].endswith("/Optizien-v9.zip")
+    assert trouve["version"] == "9" and trouve["url"].endswith("/Immolev-v9.zip")
     assert maj.chercher_en_ligne(bon, "9", site) is None
     assert maj.telecharger(trouve["url"], bon, tmp_path / "z.zip").read_bytes() == b"ZIP"
     with pytest.raises(PermissionError):

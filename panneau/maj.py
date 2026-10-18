@@ -1,4 +1,4 @@
-"""Mise à jour en un clic : remplace le code (systeme/app) par celui d'un Optizien.zip plus récent.
+"""Mise à jour en un clic : remplace le code (systeme/app) par celui d'un Immolev.zip plus récent.
 
 Le Python embarqué n'est pas touché (ses fichiers .exe/.dll sont verrouillés pendant l'exécution) ;
 les fichiers .py, eux, peuvent être remplacés à chaud. Le panneau se relance ensuite tout seul.
@@ -9,7 +9,7 @@ import io
 import zipfile
 from pathlib import Path
 
-PREFIXE = "Optizien/systeme/app/"
+PREFIXE = "Immolev/systeme/app/"
 
 
 def version_de(app: Path) -> str:
@@ -32,11 +32,11 @@ def rang(version: str | None) -> int:
 
 
 def chercher(dossiers: list[Path], actuelle: str) -> dict | None:
-    """Le zip Optizien le plus récent trouvé dans ces dossiers, s'il est plus récent que la version installée."""
+    """Le zip Immolev le plus récent trouvé dans ces dossiers, s'il est plus récent que la version installée."""
     meilleur = None
     for d in dossiers:
         try:
-            candidats = list(d.glob("Optizien*.zip"))
+            candidats = list(d.glob("Immolev*.zip"))
         except OSError:
             continue
         for f in candidats:
@@ -51,13 +51,13 @@ def appliquer(source: Path | bytes, app: Path, lanceur: Path | None = None) -> s
     app = app.resolve()
     with zipfile.ZipFile(io.BytesIO(source) if isinstance(source, bytes) else source) as z:
         if PREFIXE + "VERSION" not in z.namelist():
-            raise ValueError("Ce fichier n'est pas un zip Optizien.")
+            raise ValueError("Ce fichier n'est pas un zip Immolev.")
         for nom in z.namelist():
             if nom.endswith("/"):
                 continue
             if nom.startswith(PREFIXE):
                 cible = (app / nom[len(PREFIXE):]).resolve()
-            elif lanceur and nom == "Optizien/Ouvrir Optizien.vbs":
+            elif lanceur and nom == "Immolev/Ouvrir Immolev.vbs":
                 cible = lanceur
             else:
                 continue
@@ -68,8 +68,8 @@ def appliquer(source: Path | bytes, app: Path, lanceur: Path | None = None) -> s
         return z.read(PREFIXE + "VERSION").decode().strip()
 
 
-# Mises à jour en ligne : espace protégé du site Optizien (compte + mot de passe du magasin) ----------
-SITE = "https://optizien.vercel.app/telecharger"
+# Mises à jour en ligne : espace protégé du site Immolev (compte + mot de passe du gestionnaire) ----------
+SITE = "https://immolev.vercel.app/telecharger"
 
 
 def _requete(url: str, compte: dict, timeout: int = 20):
@@ -80,7 +80,7 @@ def _requete(url: str, compte: dict, timeout: int = 20):
 
 
 def version_en_ligne(compte: dict, site: str = SITE) -> dict:
-    """{"version": "7", "fichier": "Optizien-v7.zip"} ; lève PermissionError si le compte est refusé."""
+    """{"version": "7", "fichier": "Immolev-v7.zip"} ; lève PermissionError si le compte est refusé."""
     import json
     import urllib.error
     try:
@@ -88,7 +88,7 @@ def version_en_ligne(compte: dict, site: str = SITE) -> dict:
             d = json.loads(r.read())
     except urllib.error.HTTPError as e:
         if e.code == 401:
-            raise PermissionError("Identifiant ou mot de passe refusé par le site Optizien.") from None
+            raise PermissionError("Identifiant ou mot de passe refusé par le site Immolev.") from None
         raise
     return {"version": str(d["version"]), "url": f"{site}/{d['fichier']}"}
 

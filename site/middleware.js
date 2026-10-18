@@ -1,7 +1,7 @@
 // Espace magasins : page de connexion /espace (identifiant + mot de passe) qui pose un cookie de session signé.
 // Le logiciel (mises à jour en ligne) continue d'envoyer l'entête « Authorization: Basic ».
-// Comptes dans la variable Vercel OPTIZIEN_COMPTES = "identifiant:sha256(identifiant:motdepasse);…"
-// Clé de signature : OPTIZIEN_SECRET si définie, sinon dérivée des comptes.
+// Comptes dans la variable Vercel IMMOLEV_COMPTES = "identifiant:sha256(identifiant:motdepasse);…"
+// Clé de signature : IMMOLEV_SECRET si définie, sinon dérivée des comptes.
 export const config = { matcher: ['/espace', '/telecharger', '/telecharger/:path*', '/espace/connexion', '/espace/deconnexion'] };
 
 const COOKIE = 'oz_session';
@@ -9,7 +9,7 @@ const DUREE = 30 * 24 * 3600;  // 30 jours
 const enc = new TextEncoder();
 const hex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
 const empreinte = async (t) => hex(await crypto.subtle.digest('SHA-256', enc.encode(t)));
-const comptes = () => Object.fromEntries((process.env.OPTIZIEN_COMPTES || '').split(';').filter(Boolean).map((c) => c.split(':')));
+const comptes = () => Object.fromEntries((process.env.IMMOLEV_COMPTES || '').split(';').filter(Boolean).map((c) => c.split(':')));
 const suivant = () => new Response(null, { headers: { 'x-middleware-next': '1' } });
 const vers = (url, entetes = {}) => new Response(null, { status: 303, headers: { Location: url, 'Cache-Control': 'no-store', ...entetes } });
 
@@ -26,7 +26,7 @@ async function verifier(id, mdp) {
 }
 
 async function signature(charge) {
-  const cle = await crypto.subtle.importKey('raw', enc.encode(process.env.OPTIZIEN_SECRET || 'oz:' + (process.env.OPTIZIEN_COMPTES || '')),
+  const cle = await crypto.subtle.importKey('raw', enc.encode(process.env.IMMOLEV_SECRET || 'oz:' + (process.env.IMMOLEV_COMPTES || '')),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   return hex(await crypto.subtle.sign('HMAC', cle, enc.encode(charge)));
 }
@@ -79,5 +79,5 @@ export default async function middleware(requete) {
   const page = url.pathname === '/telecharger' || url.pathname === '/telecharger/' || url.pathname === '/telecharger/index.html';
   if (page && b === null) return vers('/espace');
   // Fichiers (version.json, zip) : 401 sans fenêtre de connexion du navigateur.
-  return new Response('Accès réservé aux magasins Optizien.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+  return new Response('Accès réservé aux magasins Immolev.', { status: 401, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

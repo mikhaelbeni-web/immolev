@@ -1,4 +1,4 @@
-/* Optizien Eyewear : noir, ivoire, laiton. Titres Cormorant Garamond, texte Inter. */
+/* Immolev : noir, ivoire, laiton. Titres Cormorant Garamond, texte Inter. */
 :root{--encre:#16130f;--ivoire:#f6f3ee;--carte:#fffdfa;--laiton:#a8834a;--laiton-clair:#d9c29a;--doux:#6f675c;--bord:#e6dfd4;
   --titre:"Cormorant Garamond",Georgia,"Times New Roman",serif;--corps:Inter,"Segoe UI",system-ui,-apple-system,sans-serif}
 *{box-sizing:border-box}

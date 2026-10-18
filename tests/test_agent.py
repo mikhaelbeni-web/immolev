@@ -4,11 +4,11 @@ from types import SimpleNamespace as NS
 from agent.orchestrateur import traiter
 from agent.outils import Contexte, catalogue
 from agent.telegram import Pont
-from ordonnance.schema import Oeil, Ordonnance
+from document.schema import Document
 
-ORDO = Ordonnance(
-    patient_nom="DUPONT", patient_prenom="Jean", prescripteur_nom="Dr Martin", date_prescription=date(2026, 3, 1),
-    patient_date_naissance=date(1990, 5, 2), od=Oeil(sphere=-2.25), og=Oeil(sphere=-2.0, cylindre=-0.5),
+DOC = Document(
+    type_document="facture_fournisseur", emetteur_nom="Bâti Sud", destinataire_nom="Jean DURAND", numero="F-118",
+    date_document=date(2026, 3, 1), montant_ht=1000.0, montant_tva=200.0, iban="FR7630006000011234567890189",
 )
 
 
@@ -32,30 +32,30 @@ class Logiciel:
     def __init__(self):
         self.recues = []
 
-    def envoyer(self, ordo):
-        self.recues.append(ordo)
+    def envoyer(self, doc):
+        self.recues.append(doc)
         return "CLI-7"
 
 
 def test_ecriture_mise_en_attente_lecture_executee():
     ctx, logiciel = Contexte(photos={"photo1": (b"x", "image/jpeg")}), Logiciel()
-    outils = catalogue(ctx, logiciel, lambda img, media: ORDO)
+    outils = catalogue(ctx, logiciel, lambda img, media: DOC)
     claude = ClaudeScripte([
-        [("lire_ordonnance", {"photo_id": "photo1"})],
-        [("corriger_ordonnance", {"photo_id": "photo1", "champ": "og.axe", "valeur": "90"})],
-        [("saisir_ordonnance_myeasyoptic", {"photo_id": "photo1"})],
-        "Ordonnance de J.D. prête, à confirmer.",
+        [("lire_document", {"photo_id": "photo1"})],
+        [("corriger_document", {"photo_id": "photo1", "champ": "montant_ttc", "valeur": "1200"})],
+        [("classer_document", {"photo_id": "photo1"})],
+        "Facture Bâti Sud prête, à confirmer.",
     ])
-    r = traiter("Saisis cette ordonnance", outils, claude)
-    assert [a.outil for a in r.en_attente] == ["saisir_ordonnance_myeasyoptic"]
+    r = traiter("Classe cette facture", outils, claude)
+    assert [a.outil for a in r.en_attente] == ["classer_document"]
     assert logiciel.recues == []  # rien écrit sans confirmation
-    assert ctx.ordonnances["photo1"].og.axe == 90
+    assert ctx.documents["photo1"].montant_ttc == 1200
     resultat_lecture = claude.appels[-1]["messages"][2]["content"][0]["content"]
-    assert "og.axe" in resultat_lecture  # l'alerte cylindre sans axe a été remontée à Claude
+    assert "montant_ttc" in resultat_lecture  # l'alerte montant à payer absent a été remontée à Claude
 
 
 def test_outil_non_branche_renvoye_en_erreur():
-    claude = ClaudeScripte([[("rechercher_client_myeasyoptic", {"nom": "X", "prenom": "Y", "date_naissance": ""})], "Pas encore possible."])
+    claude = ClaudeScripte([[("rechercher_logiciel_gestion", {"logiciel": "copropriete", "recherche": "lot 12"})], "Pas encore possible."])
     traiter("Cherche X", catalogue(Contexte(), Logiciel()), claude)
     resultat = claude.appels[-1]["messages"][2]["content"][0]
     assert resultat["is_error"] and "pas encore branché" in resultat["content"]
@@ -79,16 +79,16 @@ class TelegramFactice:
 def demande_scriptee(demande, outils):
     from agent.orchestrateur import traiter as t
     return t(demande, outils, ClaudeScripte([
-        [("lire_ordonnance", {"photo_id": "photo1"})],
-        [("corriger_ordonnance", {"photo_id": "photo1", "champ": "og.axe", "valeur": "90"})],
-        [("saisir_ordonnance_myeasyoptic", {"photo_id": "photo1"})],
+        [("lire_document", {"photo_id": "photo1"})],
+        [("corriger_document", {"photo_id": "photo1", "champ": "montant_ttc", "valeur": "1200"})],
+        [("classer_document", {"photo_id": "photo1"})],
         "Prête.",
     ]))
 
 
 def test_pont_telegram_de_bout_en_bout():
     tg, logiciel = TelegramFactice(), Logiciel()
-    pont = Pont(tg, membres={11}, destination=logiciel, traiter_demande=demande_scriptee, extracteur=lambda i, m: ORDO, photos_autorisees=True)
+    pont = Pont(tg, membres={11}, destination=logiciel, traiter_demande=demande_scriptee, extracteur=lambda i, m: DOC, photos_autorisees=True)
 
     pont.traiter_update({"message": {"message_id": 1, "from": {"id": 99}, "chat": {"id": 5}, "text": "Saisis tout"}})
     assert tg.envois == []  # inconnu ignoré
@@ -96,7 +96,7 @@ def test_pont_telegram_de_bout_en_bout():
     pont.traiter_update({"message": {"message_id": 2, "from": {"id": 11}, "chat": {"id": 5}, "photo": [{"file_id": "f"}]}})
     assert ("deleteMessage", {"chat_id": 5, "message_id": 2}) in tg.envois
     confirmation = tg.textes()[-1]
-    assert "OG sph -2.0 cyl -0.5 axe 90" in confirmation and "DUPONT" not in confirmation and confirmation.count("JD") == 1
+    assert "TTC 1200.0" in confirmation and "IBAN …0189" in confirmation and "DURAND" not in confirmation and "FR763000" not in confirmation
     action_id = next(iter(pont.actions))
 
     pont.traiter_update({"callback_query": {"id": "c", "from": {"id": 99}, "data": f"ok:{action_id}"}})
@@ -108,7 +108,7 @@ def test_pont_telegram_de_bout_en_bout():
 
 def test_photos_refusees_par_defaut():
     tg = TelegramFactice()
-    pont = Pont(tg, membres={11}, destination=Logiciel(), traiter_demande=demande_scriptee, extracteur=lambda i, m: ORDO)
+    pont = Pont(tg, membres={11}, destination=Logiciel(), traiter_demande=demande_scriptee, extracteur=lambda i, m: DOC)
     pont.traiter_update({"message": {"message_id": 3, "from": {"id": 11}, "chat": {"id": 5}, "photo": [{"file_id": "f"}]}})
     assert ("deleteMessage", {"chat_id": 5, "message_id": 3}) in tg.envois and "page web" in tg.textes()[-1]
     assert not pont.actions
@@ -126,14 +126,14 @@ def test_vocal_transcrit_puis_traite():
     assert "Compris" in textes[0] and "Dupont" in textes[0] and recu == ["ouvre la fiche de monsieur Dupont"]
 
 
-def test_regles_du_magasin(tmp_path, monkeypatch):
+def test_regles_du_gestionnaire(tmp_path, monkeypatch):
     from agent import orchestrateur, regles
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
-    assert "Règles du magasin" not in orchestrateur.systeme()
-    regles.ecrire("# Mutuelles\n- Harmonie Mutuelle → Almerys")
-    assert "Harmonie Mutuelle → Almerys" in regles.ajouter("Les lentilles se commandent le mardi") or True
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
+    assert "Règles du gestionnaire" not in orchestrateur.systeme()
+    regles.ecrire("# Biens\n- Hôtel Le Parc → PMS Mews")
+    assert "Retenu" in regles.ajouter("Les appels de fonds partent le 1er du trimestre")
     s = orchestrateur.systeme()
-    assert "Harmonie Mutuelle → Almerys" in s and "lentilles se commandent le mardi" in s
+    assert "Hôtel Le Parc → PMS Mews" in s and "appels de fonds partent le 1er du trimestre" in s
     pont = Pont(TelegramFactice(), {1})
     assert pont._outils(Contexte())["retenir_regle"].ecriture  # confirmation avant d'ajouter une règle
 
@@ -174,7 +174,7 @@ def test_message_erreur_credit():
 
 
 def test_sites_connus_dans_le_prompt(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
     from agent.orchestrateur import systeme
     assert "Aucun site" in systeme()
     (tmp_path / "acces.json").write_text('[{"id": "a", "nom": "MyEasyOptic", "url": "https://app.myeasyoptic.com", "domaine": "myeasyoptic.com"}]')
@@ -184,7 +184,7 @@ def test_sites_connus_dans_le_prompt(tmp_path, monkeypatch):
 def test_file_des_taches(tmp_path, monkeypatch):
     import threading, time
     from agent.orchestrateur import Resultat
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
     tg = TelegramFactice()
     feu = threading.Event()
     faites = []

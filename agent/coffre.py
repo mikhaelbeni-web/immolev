@@ -1,7 +1,7 @@
 """Coffre des secrets : le coffre Windows (keyring) en priorité, sinon un fichier chiffré par Windows (DPAPI).
 
 Même interface que keyring (get_password / set_password / delete_password). Si le module keyring manque ou si
-le coffre système répond par une erreur, les secrets sont gardés dans %LOCALAPPDATA%\\Optizien\\coffre.json,
+le coffre système répond par une erreur, les secrets sont gardés dans %LOCALAPPDATA%\\Immolev\\coffre.json,
 chiffrés avec le compte Windows de l'utilisateur : illisibles depuis un autre PC ou un autre compte.
 """
 from __future__ import annotations
@@ -39,8 +39,8 @@ def _dpapi(chiffrer: bool) -> Callable[[bytes], bytes]:
 class Coffre:
     def __init__(self, fichier: Path | None = None, chiffrer: Callable[[bytes], bytes] | None = None,
                  dechiffrer: Callable[[bytes], bytes] | None = None, utiliser_keyring: bool = True):
-        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".optizien")
-        self.fichier = fichier or base / "Optizien" / "coffre.json"
+        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".immolev")
+        self.fichier = fichier or base / "Immolev" / "coffre.json"
         self._chiffrer = chiffrer
         self._dechiffrer = dechiffrer
         self.utiliser_keyring = utiliser_keyring

@@ -1,8 +1,8 @@
-"""Serveur MCP Gmail d'Optizien (API Gmail officielle, OAuth). Lecture libre, brouillon et envoi sur confirmation.
+"""Serveur MCP Gmail d'Immolev (API Gmail officielle, OAuth). Lecture libre, brouillon et envoi sur confirmation.
 
 Plusieurs boîtes : un seul serveur, un paramètre « compte » dans chaque outil.
     python -m connecteurs.gmail_mcp --comptes a@gmail.com,b@gmail.com
-Les comptes s'ajoutent depuis le panneau Optizien (connexion()) ; chaque jeton OAuth est rangé dans
+Les comptes s'ajoutent depuis le panneau Immolev (connexion()) ; chaque jeton OAuth est rangé dans
 le coffre de Windows sous GMAIL_JETON:<adresse>, jamais dans un fichier.
 Prérequis : un client OAuth « Application de bureau » Google Cloud (fichier JSON importé dans le panneau).
 """
@@ -19,7 +19,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
 PORTEES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.compose"]
-SERVICE_COFFRE = "optizien"
+SERVICE_COFFRE = "immolev"
 
 
 def cle_jeton(adresse: str) -> str:
@@ -49,7 +49,7 @@ class BoiteGmail:
 
         jeton = keyring.get_password(SERVICE_COFFRE, cle_jeton(adresse))
         if not jeton:
-            raise SystemExit(f"Gmail {adresse} non connecté : l'ajouter dans le panneau Optizien")
+            raise SystemExit(f"Gmail {adresse} non connecté : l'ajouter dans le panneau Immolev")
         cred = Credentials.from_authorized_user_info(json.loads(jeton), PORTEES)
         if cred.expired and cred.refresh_token:
             cred.refresh(Request())
@@ -117,7 +117,7 @@ class BoiteFactice:
 def creer_serveur(boites: "Boite | dict[str, Boite]", nom: str = "gmail") -> MCPServer:
     if not isinstance(boites, dict):
         boites = {"magasin": boites}
-    serveur = MCPServer(f"{nom}-optizien")
+    serveur = MCPServer(f"{nom}-immolev")
     lecture = ToolAnnotations(read_only_hint=True)
     noms = ", ".join(boites)
 
@@ -151,7 +151,7 @@ def creer_serveur(boites: "Boite | dict[str, Boite]", nom: str = "gmail") -> MCP
 
     @serveur.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
     def envoyer_mail(destinataire: str, sujet: str, texte: str, compte: str = "") -> str:
-        """Envoie un mail depuis une boîte Gmail du magasin."""
+        """Envoie un mail depuis une boîte Gmail du gestionnaire."""
         return f"Mail « {sujet} » envoyé à {destinataire} ({boite(compte).envoyer(destinataire, sujet, texte)})"
 
     return serveur
@@ -165,7 +165,7 @@ def connexion(fichier_client: str) -> str:
 
     flux = InstalledAppFlow.from_client_secrets_file(fichier_client, PORTEES)
     cred = flux.run_local_server(port=0, open_browser=True, timeout_seconds=290,
-                                 success_message="Boîte Gmail connectée à Optizien. Vous pouvez fermer cet onglet.")
+                                 success_message="Boîte Gmail connectée à Immolev. Vous pouvez fermer cet onglet.")
     adresse = build("gmail", "v1", credentials=cred, cache_discovery=False).users().getProfile(userId="me").execute()["emailAddress"]
     keyring.set_password(SERVICE_COFFRE, cle_jeton(adresse), cred.to_json())
     return adresse.lower()
@@ -185,5 +185,5 @@ if __name__ == "__main__":
     else:
         comptes = sys.argv[sys.argv.index("--comptes") + 1].split(",") if "--comptes" in sys.argv else []
         if not comptes:
-            raise SystemExit("Aucune boîte Gmail : l'ajouter dans le panneau Optizien")
+            raise SystemExit("Aucune boîte Gmail : l'ajouter dans le panneau Immolev")
         creer_serveur({c: BoiteGmail(c) for c in comptes if c}).run()

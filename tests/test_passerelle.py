@@ -12,7 +12,7 @@ COMPTE = {"identifiant": "essai", "mot_de_passe": "Secret1"}
 
 @pytest.fixture
 def serveur():
-    """Faux serveur Optizien : accepte essai:Secret1, répond au ping et à /v1/messages."""
+    """Faux serveur Immolev : accepte essai:Secret1, répond au ping et à /v1/messages."""
     vu = []
 
     class H(BaseHTTPRequestHandler):

@@ -1,9 +1,9 @@
-"""Transcription de la voix (vocaux Telegram, dictée des règles dans le panneau), sur le PC du magasin.
+"""Transcription de la voix (vocaux Telegram, dictée des règles dans le panneau), sur le PC du gestionnaire.
 
 faster-whisper, modèle « large-v3-turbo » (le Whisper d'OpenAI, version rapide) en int8 sur le processeur :
 qualité proche de la dictée de ChatGPT, l'audio ne quitte pas le PC. Le modèle (~1,6 Go) est téléchargé
 par le panneau à l'installation des composants ; s'il manque, repli sur « small » (~460 Mo).
-Un vocabulaire d'optique est donné au modèle pour qu'il écrive juste les termes du métier.
+Un vocabulaire de l'immobilier et de la gestion est donné au modèle pour qu'il écrive juste les termes du métier.
 
     python -m agent.voix fichier_audio     # écrit le texte sur la sortie (utilisé par le panneau)
 """
@@ -19,10 +19,11 @@ from .acces import dossier_donnees
 
 MODELE = os.environ.get("WHISPER_MODELE", "large-v3-turbo")
 SECOURS = "small"
-VOCABULAIRE = ("Magasin d'optique. Ordonnance, ophtalmologiste, orthoptiste, sphère, cylindre, axe, addition, "
-               "prisme, écart pupillaire, verres progressifs, unifocaux, monture, lentilles, tiers payant, mutuelle, "
-               "prise en charge, devis, facture, MyEasyOptic, Almerys, Viamedis, iSanté, Kalixia, Itelis, Santéclair, "
-               "carte Vitale, Sécurité sociale, rendez-vous.")
+VOCABULAIRE = ("Gestion immobilière et développement foncier. Copropriété, syndic, conseil syndical, assemblée générale, "
+               "appel de fonds, tantièmes, lot, règlement de copropriété, VEFA, permis de construire, PLU, compromis, "
+               "promesse de vente, notaire, bail commercial, quittance, loyer, hôtel, taux d'occupation, prix moyen, RevPAR, "
+               "TVA, SCI, LMNP, holding, bilan, liasse fiscale, revenu fiscal de référence, impots.gouv, URSSAF, "
+               "taxe foncière, CFE, IFI, rendez-vous.")
 _modele = None
 _verrou = threading.Lock()
 

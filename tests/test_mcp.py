@@ -47,7 +47,7 @@ def test_mail_envoye_seulement_apres_confirmation(connecteurs):
     assert "Mail « Rejet Viamedis » envoyé à compta@magasin.fr" in tg.textes()[-1]
 
 
-def test_connecteur_gmail_optizien():
+def test_connecteur_gmail_immolev():
     racine = str(Path(__file__).resolve().parent.parent)
     c = ConnecteursMCP({"gmail": {"commande": sys.executable, "args": ["-m", "connecteurs.gmail_mcp"],
                                   "env": {"GMAIL_FAUX": "1", "PYTHONPATH": racine}}})

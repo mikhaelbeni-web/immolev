@@ -1,9 +1,9 @@
 """Serveur MCP « mail par code » : IMAP + SMTP avec un mot de passe d'application.
 
-Le plus simple pour l'opticien : adresse + code de 16 caractères (Gmail : myaccount.google.com/apppasswords,
+Le plus simple pour le gestionnaire : adresse + code de 16 caractères (Gmail : myaccount.google.com/apppasswords,
 validation en 2 étapes requise). Marche aussi pour Orange, Free, SFR, OVH, Yahoo, iCloud…
 Plusieurs boîtes dans un seul serveur, paramètre « compte » dans chaque outil.
-Les codes sont dans le coffre Windows (service optizien, clé MAIL:<adresse>), jamais dans un fichier.
+Les codes sont dans le coffre Windows (service immolev, clé MAIL:<adresse>), jamais dans un fichier.
 
     python -m connecteurs.imap_mcp --comptes a@gmail.com,b@orange.fr
 """
@@ -22,7 +22,7 @@ import time
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 
-SERVICE_COFFRE = "optizien"
+SERVICE_COFFRE = "immolev"
 
 # domaine → (serveur IMAP, serveur SMTP SSL)
 SERVEURS = {
@@ -138,7 +138,7 @@ def charger(adresse: str) -> BoiteImap:
     from agent import coffre as keyring
     brut = keyring.get_password(SERVICE_COFFRE, cle(adresse))
     if not brut:
-        raise SystemExit(f"Boîte {adresse} absente du coffre : l'ajouter dans le panneau Optizien")
+        raise SystemExit(f"Boîte {adresse} absente du coffre : l'ajouter dans le panneau Immolev")
     d = json.loads(brut)
     return BoiteImap(adresse, d["mot_de_passe"], d["imap"], d["smtp"])
 
@@ -174,6 +174,6 @@ if __name__ == "__main__":
     from connecteurs.gmail_mcp import creer_serveur  # mêmes outils : comptes, chercher, lire, brouillon, envoyer
     comptes = sys.argv[sys.argv.index("--comptes") + 1].split(",") if "--comptes" in sys.argv else []
     if not comptes:
-        raise SystemExit("Aucune boîte : l'ajouter dans le panneau Optizien")
+        raise SystemExit("Aucune boîte : l'ajouter dans le panneau Immolev")
     serveur = creer_serveur({c: charger(c) for c in comptes if c}, nom="mail")
     serveur.run()

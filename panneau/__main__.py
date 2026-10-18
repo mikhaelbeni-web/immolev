@@ -1,6 +1,6 @@
-"""Panneau Optizien : installation, réglages et marche/arrêt de l'agent, sans ligne de commande.
+"""Panneau Immolev : installation, réglages et marche/arrêt de l'agent, sans ligne de commande.
 
-Lancé par « Démarrer Optizien » (pythonw -m panneau). N'utilise que la bibliothèque standard
+Lancé par « Démarrer Immolev » (pythonw -m panneau). N'utilise que la bibliothèque standard
 tant que les composants ne sont pas installés. Écoute seulement 127.0.0.1, avec un jeton.
 
     -m panneau           ouvre le panneau
@@ -33,12 +33,12 @@ from .messagerie import Messagerie
 APP = Path(__file__).resolve().parent.parent
 SYSTEME = APP.parent
 JOURNAL_DIR = SYSTEME / "journal"
-DONNEES = Path(os.environ.get("OPTIZIEN_DONNEES") or
-               Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share") / "Optizien")
+DONNEES = Path(os.environ.get("IMMOLEV_DONNEES") or
+               Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share") / "Immolev")
 EXIGENCES = APP / "requirements-agent.txt"
-SERVICE = "optizien"
+SERVICE = "immolev"
 PAGE = Path(__file__).with_name("page.html")
-ICONE = Path(__file__).with_name("optizien.ico")
+ICONE = Path(__file__).with_name("immolev.ico")
 
 
 # ---------------------------------------------------------------- secrets (coffre Windows)
@@ -167,7 +167,7 @@ class Etat:
         return hashlib.sha256(EXIGENCES.read_bytes()).hexdigest()[:16]
 
     def composants_ok(self) -> bool:
-        repere = Path(sys.prefix) / "optizien-composants.txt"
+        repere = Path(sys.prefix) / "immolev-composants.txt"
         return repere.exists() and repere.read_text().strip() == self.empreinte()
 
     def installer(self) -> None:
@@ -203,11 +203,11 @@ class Etat:
             if r.returncode:  # l'agent marche sans : seuls les vocaux attendront
                 with open(journal, "a", encoding="utf-8") as j:
                     j.write(r.stdout + r.stderr)
-            (Path(sys.prefix) / "optizien-composants.txt").write_text(self.empreinte())
+            (Path(sys.prefix) / "immolev-composants.txt").write_text(self.empreinte())
             charger_composants()
             self.installation.update(progression=100, ligne="Composants installés.")
             self.verifier_tout()
-        except Exception as e:  # noqa: BLE001 — affiché à l'opticien
+        except Exception as e:  # noqa: BLE001 — affiché au gestionnaire
             self.installation["erreur"] = str(e)
         finally:
             self.installation["en_cours"] = False
@@ -301,7 +301,7 @@ class Etat:
         if not self.composants_ok():
             manque.append("installer les composants")
         if not (self.compte() or lire_secret("ANTHROPIC_API_KEY")):
-            manque.append("le compte Optizien")
+            manque.append("le compte Immolev")
         if not lire_secret("TELEGRAM_TOKEN"):
             manque.append("le bot Telegram")
         if not self.membres():
@@ -343,7 +343,7 @@ class Etat:
         return trouve
 
     def verifier_ia(self) -> None:
-        """Connexion de l'agent à Claude : par la passerelle du site (compte Optizien), sinon par une ancienne clé locale."""
+        """Connexion de l'agent à Claude : par la passerelle du site (compte Immolev), sinon par une ancienne clé locale."""
         if (compte := self.compte()):
             self._acces()
             from agent import passerelle
@@ -353,9 +353,9 @@ class Etat:
         else:
             self.verif_cle = None
 
-    # compte du site Optizien (agent et mises à jour en ligne) ---------------------------
+    # compte du site Immolev (agent et mises à jour en ligne) ---------------------------
     def compte(self) -> dict | None:
-        brut = lire_secret("OPTIZIEN_COMPTE")
+        brut = lire_secret("IMMOLEV_COMPTE")
         return json.loads(brut) if brut else None
 
     def enregistrer_compte(self, identifiant: str, mot_de_passe: str) -> None:
@@ -367,8 +367,8 @@ class Etat:
         except PermissionError as e:
             raise ValueError(str(e)) from None
         except OSError as e:
-            raise ValueError(f"Site Optizien injoignable : {e}") from None
-        ecrire_secret("OPTIZIEN_COMPTE", json.dumps(compte))
+            raise ValueError(f"Site Immolev injoignable : {e}") from None
+        ecrire_secret("IMMOLEV_COMPTE", json.dumps(compte))
         self.verifier_ia()
         self.verifier_en_ligne()
 
@@ -388,16 +388,16 @@ class Etat:
         trouve = self.maj_disponible() or {}
         if contenu is None and trouve.get("url"):
             if not (compte := self.compte()):
-                raise ValueError("Enregistrez d'abord le compte Optizien (carte Options).")
+                raise ValueError("Enregistrez d'abord le compte Immolev (carte Options).")
             contenu = maj.telecharger(trouve["url"], compte, DONNEES / "maj-telechargee.zip").read_bytes()
         source = contenu if contenu is not None else Path(trouve.get("chemin", ""))
         if not contenu and not source.exists():
             raise ValueError("Aucune nouvelle version trouvée.")
         if maj.version_zip(source) is None:
-            raise ValueError("Ce fichier n'est pas un zip Optizien.")
+            raise ValueError("Ce fichier n'est pas un zip Immolev.")
         agent_en_marche = self.agent()["en_marche"]
         self.arreter_agent()
-        version = maj.appliquer(source, APP, SYSTEME.parent / "Ouvrir Optizien.vbs")
+        version = maj.appliquer(source, APP, SYSTEME.parent / "Ouvrir Immolev.vbs")
         args = ["-m", "panneau", "--apres-maj"] + (["--relancer-agent"] if agent_en_marche else [])
 
         def relancer():  # le nouveau panneau attend 3 s que celui-ci se ferme
@@ -508,7 +508,7 @@ class Etat:
 
     # options -----------------------------------------------------------
     def lien_demarrage(self) -> Path:
-        return systeme.dossier_special("Startup") / "Optizien agent.lnk"
+        return systeme.dossier_special("Startup") / "Immolev agent.lnk"
 
     def options(self) -> dict:
         try:
@@ -517,7 +517,7 @@ class Etat:
             return {"demarrage": False}
 
     def raccourci_bureau(self) -> None:
-        systeme.creer_raccourci(systeme.dossier_special("Desktop") / "Optizien.lnk", systeme.pythonw(),
+        systeme.creer_raccourci(systeme.dossier_special("Desktop") / "Immolev.lnk", systeme.pythonw(),
                                 "-m panneau", APP, ICONE)
 
     def demarrage_windows(self, actif: bool) -> None:
@@ -594,7 +594,7 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
 
         def _autorise(self) -> bool:
             hote_ok = self.headers.get("Host") == f"127.0.0.1:{self.server.server_address[1]}"
-            return hote_ok and secrets.compare_digest(self.headers.get("X-Optizien", ""), jeton)
+            return hote_ok and secrets.compare_digest(self.headers.get("X-Immolev", ""), jeton)
 
         def do_GET(self):
             if self.path.split("?")[0] == "/":
