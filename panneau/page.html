@@ -416,6 +416,17 @@
       <table id="t-couts"></table>
     </div>
   </section>
+  <section class="carte" id="c-assistance">
+    <div class="titre"><h2>Assistance à distance</h2><span class="etat" id="e-assistance"></span></div>
+    <div class="corps" style="margin-left:0">
+      <p class="petit">Un souci que vous n'arrivez pas à régler ? Cliquez sur le bouton : une fenêtre RustDesk s'ouvre avec
+        un <b>ID</b> et un <b>mot de passe à usage unique</b>. Donnez-les à Immolev par téléphone ou par message.
+        Vous voyez tout ce que fait le technicien, vous acceptez chaque connexion, et fermer la fenêtre coupe l'accès.</p>
+      <div class="ligne"><button id="b-assistance">Démarrer l'assistance</button>
+        <button class="second cache" id="b-assistance-fin">Arrêter l'assistance</button></div>
+      <div class="msg" id="m-assistance"></div>
+    </div>
+  </section>
   </div>
 
 </main>
@@ -465,6 +476,10 @@ function afficher(e) {
   const ga = e.google_agent || {};
   $("e-google").textContent = ga.ouvert ? "Connexion en cours…" : (ga.fait ? "Fait" : "À faire");
   $("e-google").style.color = ga.fait || ga.ouvert ? "" : "var(--orange)";
+  const assis = e.assistance || {};
+  $("e-assistance").textContent = assis.en_cours ? "En cours" : "";
+  $("b-assistance").classList.toggle("cache", !!assis.en_cours);
+  $("b-assistance-fin").classList.toggle("cache", !assis.en_cours);
   $("b-google").textContent = ga.fait ? "Changer de compte Google" : "Connecter le Gmail de l'agent";
   $("p-google-compte").innerHTML = ga.fait && !ga.ouvert ? ((ga.adresses || []).length
     ? "Compte connecté : <b>" + ga.adresses.map(esc).join("</b>, <b>") + "</b>"
@@ -589,6 +604,10 @@ document.addEventListener("click", ev => {
 $("i-prenom").oninput = () => { prenomTouche = true; };
 $("s-modele").onchange = () => { $("s-modele").dataset.touche = 1; };
 $("i-plafond").oninput = () => { $("i-plafond").dataset.touche = 1; };
+$("b-assistance").onclick = () => action($("b-assistance"), "m-assistance", () => api("/api/assistance/demarrer", {}),
+  () => "La fenêtre RustDesk s'ouvre (la première fois, le téléchargement prend une minute). Donnez à Immolev l'ID et le mot de passe affichés, puis acceptez la connexion quand elle arrive.");
+$("b-assistance-fin").onclick = () => action($("b-assistance-fin"), "m-assistance", () => api("/api/assistance/arreter", {}),
+  () => "Assistance arrêtée : plus personne ne peut se connecter.");
 $("b-ia").onclick = () => action($("b-ia"), "m-ia", async () => {
   await api("/api/ia", {modele: $("s-modele").value, plafond: $("i-plafond").value});
   delete $("s-modele").dataset.touche; delete $("i-plafond").dataset.touche;

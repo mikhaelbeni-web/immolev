@@ -28,6 +28,7 @@ from pathlib import Path
 import base64
 
 from . import maj, systeme, visage
+from .assistance import Assistance
 from .messagerie import Messagerie
 
 APP = Path(__file__).resolve().parent.parent
@@ -161,6 +162,7 @@ class Etat:
         DONNEES.mkdir(parents=True, exist_ok=True)
         JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
         self.verrou = threading.Lock()
+        self.assistance = Assistance(DONNEES / "assistance")
         self.installation = {"en_cours": False, "progression": 0, "ligne": "", "erreur": None}
         self.verif_cle: dict | None = None
         self.verif_bot: dict | None = None
@@ -582,6 +584,7 @@ class Etat:
             "maj": self.maj_disponible(),
             "agent": self.agent(),
             "google_agent": self.google_agent(),
+            "assistance": self.assistance.etat(),
             "options": self.options(),
             "visage": {"choix": visage.lire(DONNEES), "liste": visage.liste(),
                        "perso": (DONNEES / "visage-perso.jpg").exists()},
@@ -651,6 +654,10 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
         def _action(self, chemin: str, c: dict):
             if chemin == "/api/installer":
                 etat.installer()
+            elif chemin == "/api/assistance/demarrer":
+                etat.assistance.demarrer()
+            elif chemin == "/api/assistance/arreter":
+                etat.assistance.arreter()
             elif chemin == "/api/google-agent/ouvrir":
                 etat.ouvrir_google_agent(str(c.get("adresse", "")))
             elif chemin == "/api/google-agent/terminer":
