@@ -55,14 +55,29 @@ def _ecrire(sites: list[dict]) -> None:
     _fichier().write_text(json.dumps(sites, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
-def enregistrer(nom: str, url: str, identifiant: str, mot_de_passe: str, ident: str | None = None) -> dict:
+def enregistrer(nom: str, url: str, identifiant: str, mot_de_passe: str, ident: str | None = None,
+                mode: str = "mdp") -> dict:
+    """mode « gmail » : connexion par le compte Google de l'agent, aucun mot de passe stocké ; « mdp » : coffre."""
     nom, url, identifiant = nom.strip(), url.strip(), identifiant.strip()
+    mode = "gmail" if mode == "gmail" else "mdp"
     if not nom or not url:
         raise ValueError("Indiquez le nom du site et l'adresse de sa page de connexion.")
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
     sites = lister()
     site = next((s for s in sites if s["id"] == ident), None) if ident else None
+    if mode == "gmail":
+        if site is None:
+            site = {"id": uuid.uuid4().hex[:8]}
+            sites.append(site)
+        else:
+            try:
+                _keyring().delete_password(SERVICE, site["id"])
+            except Exception:
+                pass
+        site.update(nom=nom, url=url, domaine=domaine_de(url), apercu="Compte Google", mode="gmail")
+        _ecrire(sites)
+        return site
     if site is None:
         if not identifiant or not mot_de_passe:
             raise ValueError("Indiquez l'identifiant et le mot de passe.")
@@ -76,7 +91,7 @@ def enregistrer(nom: str, url: str, identifiant: str, mot_de_passe: str, ident: 
     if not secret["identifiant"] or not secret["mot_de_passe"]:
         raise ValueError("Indiquez l'identifiant et le mot de passe.")
     _keyring().set_password(SERVICE, site["id"], json.dumps(secret))
-    site.update(nom=nom, url=url, domaine=domaine_de(url), apercu=_masquer(secret["identifiant"]))
+    site.update(nom=nom, url=url, domaine=domaine_de(url), apercu=_masquer(secret["identifiant"]), mode="mdp")
     _ecrire(sites)
     return site
 

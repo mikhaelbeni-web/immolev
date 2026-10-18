@@ -282,11 +282,18 @@
         <input type="text" id="i-site-url" placeholder="Adresse de la page de connexion (https://…)">
       </div>
       <div class="ligne" style="margin-top:8px">
+        <select id="i-site-mode" class="champ">
+          <option value="mdp">Identifiant et mot de passe</option>
+          <option value="gmail">Connexion avec Gmail</option>
+        </select>
+      </div>
+      <div class="ligne" style="margin-top:8px">
         <input type="text" id="i-site-id" placeholder="Identifiant" autocomplete="off">
         <input type="password" id="i-site-mdp" placeholder="Mot de passe" autocomplete="new-password">
         <button id="b-site">Enregistrer</button>
         <button class="second cache" id="b-site-annuler">Annuler</button>
       </div>
+            <p class="petit cache" id="p-site-gmail">Aucun mot de passe à saisir : l'agent se connecte avec le compte Google de l'agent (carte « Compte Google de l'agent » ci-dessous).</p>
       <div class="msg" id="m5"></div>
       <p class="petit">Adresse : ouvrez la page de connexion du site dans Chrome et copiez l'adresse en haut.</p>
     </div>
@@ -492,7 +499,7 @@ function afficher(e) {
 
   fait(5, e.acces.length > 0, e.acces.length ? e.acces.length + " site(s)" : "");
   $("t-acces").innerHTML = e.acces.map(a =>
-    `<tr><td><b>${esc(a.nom)}</b> <span class="petit">${esc(a.domaine)} · ${esc(a.apercu)}</span></td>
+    `<tr><td><b>${esc(a.nom)}</b> <span class="petit">${esc(a.domaine)} · ${a.mode === "gmail" ? "via Gmail" : esc(a.apercu)}</span></td>
      <td><button class="second" data-modifier-site="${esc(a.id)}">Modifier</button>
          <button class="second" data-suppr-site="${esc(a.id)}">Supprimer</button></td></tr>`).join("");
   acces = e.acces;
@@ -820,13 +827,15 @@ $("b-regles").onclick = () => action($("b-regles"), "m7r", () => api("/api/regle
 $("i-site-nom").onchange = () => $("i-site-autre").classList.toggle("cache", $("i-site-nom").value !== "");
 function viderSite() {
   siteEnCours = null; for (const i of ["i-site-autre", "i-site-url", "i-site-id", "i-site-mdp"]) $(i).value = "";
-  $("i-site-mdp").placeholder = "Mot de passe"; $("i-site-id").placeholder = "Identifiant";
+  $("i-site-mdp").placeholder = "Mot de passe"; $("i-site-id").placeholder = "Identifiant"; $("i-site-mode").value = "mdp"; majModeSite();
   $("b-site-annuler").classList.add("cache");
 }
 $("b-site").onclick = () => action($("b-site"), "m5", () => api("/api/acces", {
     id: siteEnCours, nom: $("i-site-nom").value || $("i-site-autre").value, url: $("i-site-url").value,
-    identifiant: $("i-site-id").value, mot_de_passe: $("i-site-mdp").value}),
-  () => { viderSite(); return "Accès enregistré dans le coffre de Windows."; });
+    identifiant: $("i-site-id").value, mot_de_passe: $("i-site-mdp").value, mode: $("i-site-mode").value}),
+  () => { const g = $("i-site-mode").value === "gmail"; viderSite(); return g ? "Site enregistré : connexion avec Gmail." : "Accès enregistré dans le coffre de Windows."; });
+const majModeSite = () => { const g = $("i-site-mode").value === "gmail"; $("i-site-id").classList.toggle("cache", g); $("i-site-mdp").classList.toggle("cache", g); $("p-site-gmail").classList.toggle("cache", !g); };
+$("i-site-mode").onchange = majModeSite;
 $("b-site-annuler").onclick = () => { viderSite(); msg("m5", ""); };
 $("b-mail").onclick = () => action($("b-mail"), "m6m", () => api("/api/mail/ajouter", {
     adresse: $("i-mail-adresse").value, code: $("i-mail-code").value, imap: $("i-mail-imap").value, smtp: $("i-mail-smtp").value}),
@@ -858,7 +867,7 @@ document.addEventListener("click", async ev => {
       const connu = [...$("i-site-nom").options].some(o => o.value === a.nom);
       $("i-site-nom").value = connu ? a.nom : ""; $("i-site-autre").value = connu ? "" : a.nom;
       $("i-site-autre").classList.toggle("cache", connu);
-      $("i-site-url").value = a.url; $("i-site-id").value = "";
+      $("i-site-url").value = a.url; $("i-site-id").value = ""; $("i-site-mode").value = a.mode === "gmail" ? "gmail" : "mdp"; majModeSite();
       $("i-site-id").placeholder = "Identifiant (vide = inchangé)"; $("i-site-mdp").placeholder = "Mot de passe (vide = inchangé)";
       $("b-site-annuler").classList.remove("cache"); msg("m5", "Modification de " + a.nom, "att");
     }

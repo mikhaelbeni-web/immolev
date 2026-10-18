@@ -670,7 +670,8 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 etat.demarrage_windows(bool(c.get("actif")))
             elif chemin == "/api/acces":
                 etat._acces().enregistrer(str(c.get("nom", "")), str(c.get("url", "")), str(c.get("identifiant", "")),
-                                          str(c.get("mot_de_passe", "")), c.get("id") or None)
+                                          str(c.get("mot_de_passe", "")), c.get("id") or None,
+                                          "gmail" if c.get("mode") == "gmail" else "mdp")
             elif chemin == "/api/acces/supprimer":
                 etat._acces().supprimer(str(c.get("id", "")))
             elif chemin == "/api/gmail/client":

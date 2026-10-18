@@ -234,6 +234,11 @@ class Navigateur:
         if not acces.domaine_correspond(urlparse(self.page.url).hostname or "", fiche["domaine"]):
             self.page.goto(fiche["url"])
             self._attendre()
+        if fiche.get("mode") == "gmail":
+            self.carte()
+            return (f"{fiche['nom']} se connecte avec Google, sans mot de passe. Si la page demande de s'identifier, clique sur "
+                    "« Se connecter avec Google » (confirmation de l'équipe d'abord), choisis le compte Google de l'agent, puis relis la page. "
+                    "Si Google refuse ou demande un code, demande-le à l'équipe. Page actuelle :\n" + self.lire_page())
         identifiant, mot_de_passe = acces.identifiants(fiche["id"])
         mdp_tape = False
         for _ in range(3):  # certains sites demandent l'identifiant puis le mot de passe sur un 2e écran
@@ -317,7 +322,7 @@ def outils_navigateur(nav: Navigateur) -> dict[str, Outil]:
               ref, False, nav.cliquer_bouton_sans_risque),
         Outil("cliquer_bouton", "Clique sur un bouton (enregistrer, valider, envoyer, rechercher…). Après le clic, vérifier la page.", ref, True, nav.cliquer_bouton),
         Outil("se_connecter", "Se connecte à un site du coffre des accès (MyEasyOptic, portail de tiers payant…) quand une page demande de s'identifier. "
-              "Tape l'identifiant et le mot de passe enregistrés par l'opticien sans que tu les voies. Ne demande jamais d'identifiants à l'équipe.",
+              "Tape l'identifiant et le mot de passe enregistrés par l'opticien sans que tu les voies ; pour un site en mode Gmail, ouvre la page et tu cliques « Se connecter avec Google ». Ne demande jamais d'identifiants à l'équipe.",
               {"site": {"type": "string", "description": "Nom du site, ex. MyEasyOptic, Almerys, Viamedis"}}, False, nav.se_connecter),
         Outil("relever_ecran", "Mémorise la structure de l'écran actuel sous un nom (ex. 'myeasyoptic_fiche_client') pour en faire une procédure. Aucune valeur n'est enregistrée.",
               {"nom": {"type": "string"}}, False, nav.relever_ecran),
