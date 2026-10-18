@@ -56,7 +56,7 @@ def _ecrire(sites: list[dict]) -> None:
 
 
 def enregistrer(nom: str, url: str, identifiant: str, mot_de_passe: str, ident: str | None = None,
-                mode: str = "mdp") -> dict:
+                mode: str = "mdp", gmail: str = "") -> dict:
     """mode « gmail » : connexion par le compte Google de l'agent, aucun mot de passe stocké ; « mdp » : coffre."""
     nom, url, identifiant = nom.strip(), url.strip(), identifiant.strip()
     mode = "gmail" if mode == "gmail" else "mdp"
@@ -67,6 +67,9 @@ def enregistrer(nom: str, url: str, identifiant: str, mot_de_passe: str, ident: 
     sites = lister()
     site = next((s for s in sites if s["id"] == ident), None) if ident else None
     if mode == "gmail":
+        gmail = gmail.strip().lower()
+        if "@" not in gmail:
+            raise ValueError("Indiquez l'adresse Gmail avec laquelle ce site est connecté.")
         if site is None:
             site = {"id": uuid.uuid4().hex[:8]}
             sites.append(site)
@@ -75,7 +78,7 @@ def enregistrer(nom: str, url: str, identifiant: str, mot_de_passe: str, ident: 
                 _keyring().delete_password(SERVICE, site["id"])
             except Exception:
                 pass
-        site.update(nom=nom, url=url, domaine=domaine_de(url), apercu="Compte Google", mode="gmail")
+        site.update(nom=nom, url=url, domaine=domaine_de(url), apercu=gmail, mode="gmail", gmail=gmail)
         _ecrire(sites)
         return site
     if site is None:

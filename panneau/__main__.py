@@ -483,13 +483,17 @@ class Etat:
         except (OSError, ValueError):
             return {}
 
-    def ouvrir_google_agent(self) -> None:
+    def ouvrir_google_agent(self, adresse: str = "") -> None:
         """Arrête l'agent le temps de la connexion (le profil Chrome ne sert qu'à une fenêtre), puis ouvre Google."""
         relancer = self.agent()["en_marche"] or bool(self.google_agent().get("relancer"))
         if self.agent()["en_marche"]:
             self.arreter_agent()
             time.sleep(2)
-        systeme.ouvrir_chrome_profil("https://accounts.google.com/", DONNEES / "chrome-agent")
+        url = "https://accounts.google.com/"
+        if "@" in adresse:
+            from urllib.parse import quote
+            url = "https://accounts.google.com/AddSession?login_hint=" + quote(adresse)
+        systeme.ouvrir_chrome_profil(url, DONNEES / "chrome-agent")
         DONNEES.mkdir(parents=True, exist_ok=True)
         (DONNEES / "google-agent.json").write_text(json.dumps(
             {"fait": bool(self.google_agent().get("fait")), "ouvert": True, "relancer": relancer}), encoding="utf-8")
@@ -633,7 +637,7 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
             if chemin == "/api/installer":
                 etat.installer()
             elif chemin == "/api/google-agent/ouvrir":
-                etat.ouvrir_google_agent()
+                etat.ouvrir_google_agent(str(c.get("adresse", "")))
             elif chemin == "/api/google-agent/terminer":
                 etat.terminer_google_agent()
             elif chemin == "/api/bot":
@@ -671,7 +675,7 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
             elif chemin == "/api/acces":
                 etat._acces().enregistrer(str(c.get("nom", "")), str(c.get("url", "")), str(c.get("identifiant", "")),
                                           str(c.get("mot_de_passe", "")), c.get("id") or None,
-                                          "gmail" if c.get("mode") == "gmail" else "mdp")
+                                          "gmail" if c.get("mode") == "gmail" else "mdp", str(c.get("gmail", "")))
             elif chemin == "/api/acces/supprimer":
                 etat._acces().supprimer(str(c.get("id", "")))
             elif chemin == "/api/gmail/client":

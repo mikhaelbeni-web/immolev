@@ -141,7 +141,7 @@ def sites_connus() -> str:
     if not sites:
         return ("\n\nAucun site n'est encore enregistré dans le coffre des accès. Tu peux quand même ouvrir n'importe quelle adresse avec aller_a. "
                 "Pour un site qui demande une connexion, dis d'ajouter le site dans le panneau Optizien, carte « Accès aux sites ».")
-    lignes = "\n".join(f"- {s['nom']} : {s['url']}" + (" (connexion par compte Google)" if s.get("mode") == "gmail" else "") for s in sites)
+    lignes = "\n".join(f"- {s['nom']} : {s['url']}" + (f" (connexion Google avec {s.get('gmail') or 'le compte de l agent'})" if s.get("mode") == "gmail" else "") for s in sites)
     return ("\n\nSites enregistrés (pour en ouvrir un, appelle directement se_connecter avec son nom : l'outil ouvre la page "
             "et se connecte ; ne demande jamais l'adresse ni le lien à l'équipe). Les autres sites restent accessibles avec aller_a :\n" + lignes)
 
