@@ -36,11 +36,19 @@ def charger():
     with _verrou:
         if _modele is None:
             from faster_whisper import WhisperModel
-            try:
-                _modele = WhisperModel(MODELE, device="cpu", compute_type="int8", download_root=dossier_modeles())
-            except Exception:
-                logging.exception("modèle vocal %s indisponible, repli sur %s", MODELE, SECOURS)
-                _modele = WhisperModel(SECOURS, device="cpu", compute_type="int8", download_root=dossier_modeles())
+
+            def ouvrir(nom: str, local: bool):
+                return WhisperModel(nom, device="cpu", compute_type="int8", download_root=dossier_modeles(), local_files_only=local)
+            # D'abord les modèles déjà sur le PC, sans interroger internet : une connexion lente vers Hugging Face
+            # faisait échouer chaque vocal (ReadTimeout). Le téléchargement n'a lieu que si aucun modèle n'est présent.
+            for nom, local in ((MODELE, True), (SECOURS, True), (MODELE, False), (SECOURS, False)):
+                try:
+                    _modele = ouvrir(nom, local)
+                    break
+                except Exception:
+                    logging.warning("modèle vocal %s (hors ligne : %s) indisponible", nom, local, exc_info=local is False)
+            if _modele is None:
+                raise RuntimeError("Aucun modèle vocal disponible sur ce PC.")
     return _modele
 
 

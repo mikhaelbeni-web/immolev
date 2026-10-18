@@ -276,3 +276,21 @@ def test_reponse_courte_retrouve_la_fin_de_la_derniere_reponse(tmp_path, monkeyp
     for texte in ("Je veux payer le parking", "C"):
         pont.traiter_update({"message": {"message_id": 1, "from": {"id": 11}, "chat": {"id": 5}, "text": texte}})
     assert "C. Je me connecte avec Google." in recu[1] and recu[1].rstrip().endswith("Nouveau message : C")
+
+
+def test_echanges_survivent_au_redemarrage_de_l_agent(tmp_path, monkeypatch):
+    from agent import telegram
+    from agent.orchestrateur import Resultat
+    monkeypatch.setattr(telegram, "dossier_donnees", lambda: tmp_path)
+    tg = TelegramFactice()
+    pont = Pont(tg, membres={11}, traiter_demande=lambda d, o: Resultat("Options :\n- A. un\n- B. deux\n- C. trois"))
+    pont.asynchrone = True
+    pont.traiter_update({"message": {"message_id": 1, "from": {"id": 11}, "chat": {"id": 5}, "text": "Je veux payer"}})
+    assert pont.file  # en mode asynchrone la demande est mise en file ; on l'exécute comme le fait la boucle de travail
+    pont._executer(pont.file.pop(0))
+    recu = []
+    neuf = Pont(tg, membres={11}, traiter_demande=lambda d, o: (recu.append(d), Resultat("ok"))[1])
+    neuf.asynchrone = True  # agent redémarré : mémoire vide, relue depuis le disque
+    neuf.traiter_update({"message": {"message_id": 2, "from": {"id": 11}, "chat": {"id": 5}, "text": "C"}})
+    neuf._executer(neuf.file.pop(0))
+    assert "C. trois" in recu[0] and recu[0].endswith("Nouveau message : C")

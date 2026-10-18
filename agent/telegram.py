@@ -108,9 +108,38 @@ class Pont:
         maintenant = time.time()
         for cid in [c for c, (t, _) in self.contextes.items() if maintenant - t > DUREE_VIE_S]:
             del self.contextes[cid]  # les photos ne survivent pas une heure
-        _, ctx = self.contextes.get(chat_id, (0, Contexte()))
+        if chat_id not in self.contextes:
+            self.contextes[chat_id] = (maintenant, Contexte(echanges=self._echanges_gardes(chat_id)))
+        _, ctx = self.contextes[chat_id]
         self.contextes[chat_id] = (maintenant, ctx)
         return ctx
+
+    def _fichier_echanges(self):
+        return dossier_donnees() / "echanges.json"
+
+    def _echanges_gardes(self, chat_id: int) -> list[tuple[str, str]]:
+        """Derniers échanges du groupe, gardés sur disque : un redémarrage de l'agent ne les efface plus (6 h)."""
+        if not self.asynchrone:
+            return []
+        try:
+            d = json.loads(self._fichier_echanges().read_text(encoding="utf-8")).get(str(chat_id), {})
+        except (OSError, ValueError):
+            return []
+        return [(a, b) for a, b in d.get("echanges", [])] if time.time() - d.get("le", 0) < 21600 else []
+
+    def _garder_echanges(self, chat_id: int, echanges: list[tuple[str, str]]) -> None:
+        if not self.asynchrone:
+            return
+        try:
+            f = self._fichier_echanges()
+            try:
+                tout = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                tout = {}
+            tout[str(chat_id)] = {"le": time.time(), "echanges": [[a[:1500], b[:4000]] for a, b in echanges[-3:]]}
+            f.write_text(json.dumps(tout, ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            logging.exception("sauvegarde des échanges")
 
     def _outils(self, ctx: Contexte, chat_id: int | None = None) -> dict[str, Outil]:
         outils = catalogue(ctx, self.destination, self.extracteur) if self.extracteur else catalogue(ctx, self.destination)
@@ -164,7 +193,8 @@ class Pont:
                 texte = self.transcrire(self.api.telecharger(vocal["file_id"]))
             except Exception as e:
                 logging.exception("transcription")
-                return self._envoyer(chat_id, f"Vocal non compris ({type(e).__name__}). Réessaie ou écris la demande.")
+                return self._envoyer(chat_id, "Je n'ai pas pu écouter ce vocal (le modèle vocal du PC n'a pas répondu). "
+                                              "Écris la demande en texte ; je réessaierai le prochain vocal.")
             if not texte:
                 return self._envoyer(chat_id, "Je n'ai rien entendu dans ce vocal.")
             self._envoyer(chat_id, f"🎙️ Compris : « {texte} »")
@@ -218,6 +248,7 @@ class Pont:
         resultat = self.traiter_demande(complete, self._outils(ctx, chat_id))
         ctx.echanges.append((demande, resultat.texte or "Fait."))
         del ctx.echanges[:-3]
+        self._garder_echanges(chat_id, ctx.echanges)
         self._envoyer(chat_id, resultat.texte or "Fait.")
         for action in resultat.en_attente:
             self.actions[action.id] = (chat_id, action)
