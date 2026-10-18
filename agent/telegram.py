@@ -61,6 +61,16 @@ MOTS_OUI = {"confirmé", "confirme", "confirmer", "oui", "ok", "valide", "valid�
 MOTS_NON = {"non", "annule", "annuler", "annulé", "stop"}
 
 
+def _echanges_recents(echanges: list[tuple[str, str]]) -> str:
+    """Derniers échanges du groupe pour le modèle. Le dernier est gardé en entier : une réponse courte (« C », « oui »)
+    renvoie à la fin de ta dernière réponse, là où se trouvent les options. Les plus anciens sont raccourcis."""
+    lignes = []
+    for i, (d, r) in enumerate(echanges[-3:], start=1):
+        dernier = i == len(echanges[-3:])
+        lignes.append(f"- Équipe : {d[:1500 if dernier else 400]}\n- Toi : {r[:4000 if dernier else 600]}\n")
+    return "".join(lignes)
+
+
 @dataclass
 class Tache:
     numero: int
@@ -203,7 +213,7 @@ class Pont:
     def _executer(self, tache: Tache) -> None:
         chat_id, demande = tache.chat_id, tache.demande
         ctx = self._contexte(chat_id)
-        recents = "".join(f"- Équipe : {d[:400]}\n- Toi : {r[:400]}\n" for d, r in ctx.echanges[-3:])
+        recents = _echanges_recents(ctx.echanges)
         complete = f"Échanges récents dans ce groupe :\n{recents}\nNouveau message : {demande}" if recents else demande
         resultat = self.traiter_demande(complete, self._outils(ctx, chat_id))
         ctx.echanges.append((demande, resultat.texte or "Fait."))

@@ -259,3 +259,20 @@ def test_bouton_s_execute_meme_si_la_reponse_au_clic_echoue(tmp_path, monkeypatc
     tg.appeler = casse
     pont.traiter_update({"callback_query": {"id": "c", "from": {"id": 11}, "data": "ok:a1", "message": {"chat": {"id": 5}}}})
     assert executees == ["a1"] and "Brouillon créé." in tg.textes()[-1]
+
+
+def test_reponse_courte_retrouve_la_fin_de_la_derniere_reponse(tmp_path, monkeypatch):
+    """« C » après une longue réponse dont les options sont à la fin : le modèle reçoit ces options en entier."""
+    from agent import telegram
+    from agent.orchestrateur import Resultat
+    monkeypatch.setattr(telegram, "dossier_donnees", lambda: tmp_path)
+    longue = "Contexte. " * 120 + "\n- A. Vous payez vous-même.\n- B. Je vérifie le tarif.\n- C. Je me connecte avec Google."
+    recu, tg = [], TelegramFactice()
+
+    def modele(demande, outils):
+        recu.append(demande)
+        return Resultat(longue if len(recu) == 1 else "ok")
+    pont = Pont(tg, membres={11}, traiter_demande=modele)
+    for texte in ("Je veux payer le parking", "C"):
+        pont.traiter_update({"message": {"message_id": 1, "from": {"id": 11}, "chat": {"id": 5}, "text": texte}})
+    assert "C. Je me connecte avec Google." in recu[1] and recu[1].rstrip().endswith("Nouveau message : C")
