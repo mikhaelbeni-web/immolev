@@ -19,7 +19,7 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.55 var(--corps); -webkit-font-smoothing: antialiased; }
-  header { background: var(--encre); color: #f6f3ee; padding: 16px 28px; display: flex; align-items: center; gap: 16px;
+  header { background: var(--encre); color: #f6f3ee; padding: 12px 28px; min-height: 62px; display: flex; align-items: center; gap: 16px;
            position: sticky; top: 0; z-index: 2; }
   header .logo { height: 30px; width: auto; display: block; }
   header h1 { position: absolute; left: -9999px; }
@@ -78,6 +78,18 @@
         font-size: 12px; white-space: pre-wrap; text-align: left; }
   label.case { display: flex; gap: 10px; align-items: center; cursor: pointer; margin-top: 6px; }
   input[type=checkbox] { accent-color: var(--encre); width: 16px; height: 16px; }
+
+  /* Onglets : une page par thème, pour ne plus descendre tout en bas */
+  .onglets { position: sticky; top: 62px; z-index: 2; display: flex; justify-content: center; gap: 4px; padding: 8px 12px;
+             background: var(--fond); border-bottom: 1px solid var(--bord); overflow-x: auto; }
+  .onglet { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 96px; padding: 8px 14px;
+            background: transparent; color: var(--doux); border: 1px solid transparent; border-radius: 12px; font: 500 12px var(--corps); letter-spacing: .02em; }
+  .onglet svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .onglet:hover:not(:disabled) { background: var(--laiton-doux); color: var(--texte); }
+  .onglet.actif { background: var(--encre); color: #f6f3ee; border-color: var(--encre); }
+  .onglet.actif:hover:not(:disabled) { background: var(--encre); }
+  .onglet .point { position: absolute; top: 6px; right: 18px; width: 9px; height: 9px; border-radius: 50%; background: var(--laiton); border: 2px solid var(--fond); }
+  .page { display: none; } .page.actif { display: block; }
   .cache { display: none !important; }
   .fiche-barre { margin: 14px 0 6px; }
   .fiche-theme { font: 500 12px var(--corps); letter-spacing: .14em; text-transform: uppercase; color: var(--laiton); margin: 22px 0 4px; }
@@ -155,6 +167,7 @@
   <button class="second" id="b-actualiser" style="margin-left:auto">Actualiser</button>
   <span id="pastille" class="pastille off" style="margin-left:0">Agent arrêté</span>
 </header>
+<nav class="onglets" id="onglets"><button class="onglet" data-onglet="agent" id="ong-agent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg><span>Agent</span><i class="point cache"></i></button><button class="onglet" data-onglet="demarrage" id="ong-demarrage"><svg viewBox="0 0 24 24"><path d="M12 3c3 2 5 5 5 9l-2 3H9l-2-3c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M9 18l-1 3M15 18l1 3"/></svg><span>Démarrage</span><i class="point cache"></i></button><button class="onglet" data-onglet="acces" id="ong-acces"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg><span>Accès et mails</span><i class="point cache"></i></button><button class="onglet" data-onglet="savoir" id="ong-savoir"><svg viewBox="0 0 24 24"><path d="M4 5.5C6 4.5 9 4.5 12 6c3-1.5 6-1.5 8-.5V18c-2-1-5-1-8 .5-3-1.5-6-1.5-8-.5z"/><path d="M12 6v12.5"/></svg><span>Savoir du magasin</span><i class="point cache"></i></button><button class="onglet" data-onglet="reglages" id="ong-reglages"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Réglages</span><i class="point cache"></i></button></nav>
 <main>
   <section class="carte bandeau cache" id="c-maj">
     <div class="ligne"><div style="flex:1"><b>Nouvelle version disponible</b> <span class="petit" id="maj-version"></span><br>
@@ -163,47 +176,16 @@
     <div class="msg" id="m-maj"></div>
   </section>
 
-  <section class="carte" id="c-composants">
-    <div class="titre"><span class="num" id="n1">1</span><h2>Composants</h2><span class="etat" id="e1"></span></div>
-    <div class="corps" id="corps1">
-      <p class="petit">À faire une seule fois par ordinateur : téléchargement d'environ 150 Mo, 2 à 5 minutes.</p>
-      <button id="b-installer">Installer les composants</button>
-      <div id="progres" class="cache"><div class="barre"><div id="barre"></div></div><div class="petit" id="ligne-install"></div></div>
-      <div class="msg" id="m1"></div>
-    </div>
+  <div class="page" id="p-agent">
+  <section class="carte agent">
+    <img class="portrait cache" id="portrait" alt="">
+    <h2 style="margin:0;font-size:18px" id="agent-titre">Agent arrêté</h2>
+    <p id="agent-texte">Une fois démarré, un Chrome dédié s'ouvre. L'agent s'y connecte seul aux sites de la rubrique Accès.</p>
+    <button class="grand" id="b-demarrer">Démarrer l'agent</button>
+    <button class="grand danger cache" id="b-arreter">Arrêter l'agent</button>
+    <div class="msg" id="m6"></div>
+    <details id="d-journal"><summary>Journal de l'agent</summary><pre id="journal">…</pre></details>
   </section>
-
-  <section class="carte">
-    <div class="titre"><span class="num" id="n2">2</span><h2>Compte Optizien</h2><span class="etat" id="e2"></span></div>
-    <div class="corps">
-      <p class="petit" id="p-compte">Le compte du magasin donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Optizien.</p>
-      <div class="ligne" id="f-compte">
-        <input type="text" id="i-compte-id" placeholder="Identifiant Optizien" autocomplete="off">
-        <input type="password" id="i-compte-mdp" placeholder="Mot de passe" autocomplete="new-password">
-        <button id="b-compte">Se connecter</button>
-      </div>
-      <div class="msg" id="m2"></div>
-    </div>
-  </section>
-
-  <section class="carte">
-    <div class="titre"><span class="num" id="n3">3</span><h2>Bot Telegram</h2><span class="etat" id="e3"></span></div>
-    <div class="corps">
-      <div class="ligne">
-        <input type="password" id="i-bot" placeholder="123456789:AAH…" autocomplete="off">
-        <button id="b-bot">Vérifier et enregistrer</button>
-      </div>
-      <div class="msg" id="m3"></div>
-      <details><summary>Créer le bot</summary><ol>
-        <li>Dans Telegram, ouvrez <b>@BotFather</b> et envoyez <code>/newbot</code>.</li>
-        <li>Donnez un nom, puis un identifiant qui finit par <code>bot</code>.</li>
-        <li>Copiez la ligne du jeton (<code>123456789:AAH…</code>) et collez-la ici.</li>
-        <li>Envoyez <code>/setprivacy</code> à @BotFather, choisissez le bot, puis <b>Disable</b>.</li>
-        <li>Ajoutez le bot au groupe du magasin.</li>
-      </ol></details>
-    </div>
-  </section>
-
   <section class="carte">
     <div class="titre"><h2>Visage de l'agent</h2><span class="etat" id="e-visage"></span></div>
     <div class="corps" style="margin-left:0">
@@ -223,7 +205,47 @@
       <div class="msg" id="m-visage"></div>
     </div>
   </section>
+  </div>
 
+  <div class="page" id="p-demarrage">
+  <section class="carte" id="c-composants">
+    <div class="titre"><span class="num" id="n1">1</span><h2>Composants</h2><span class="etat" id="e1"></span></div>
+    <div class="corps" id="corps1">
+      <p class="petit">À faire une seule fois par ordinateur : téléchargement d'environ 150 Mo, 2 à 5 minutes.</p>
+      <button id="b-installer">Installer les composants</button>
+      <div id="progres" class="cache"><div class="barre"><div id="barre"></div></div><div class="petit" id="ligne-install"></div></div>
+      <div class="msg" id="m1"></div>
+    </div>
+  </section>
+  <section class="carte">
+    <div class="titre"><span class="num" id="n2">2</span><h2>Compte Optizien</h2><span class="etat" id="e2"></span></div>
+    <div class="corps">
+      <p class="petit" id="p-compte">Le compte du magasin donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Optizien.</p>
+      <div class="ligne" id="f-compte">
+        <input type="text" id="i-compte-id" placeholder="Identifiant Optizien" autocomplete="off">
+        <input type="password" id="i-compte-mdp" placeholder="Mot de passe" autocomplete="new-password">
+        <button id="b-compte">Se connecter</button>
+      </div>
+      <div class="msg" id="m2"></div>
+    </div>
+  </section>
+  <section class="carte">
+    <div class="titre"><span class="num" id="n3">3</span><h2>Bot Telegram</h2><span class="etat" id="e3"></span></div>
+    <div class="corps">
+      <div class="ligne">
+        <input type="password" id="i-bot" placeholder="123456789:AAH…" autocomplete="off">
+        <button id="b-bot">Vérifier et enregistrer</button>
+      </div>
+      <div class="msg" id="m3"></div>
+      <details><summary>Créer le bot</summary><ol>
+        <li>Dans Telegram, ouvrez <b>@BotFather</b> et envoyez <code>/newbot</code>.</li>
+        <li>Donnez un nom, puis un identifiant qui finit par <code>bot</code>.</li>
+        <li>Copiez la ligne du jeton (<code>123456789:AAH…</code>) et collez-la ici.</li>
+        <li>Envoyez <code>/setprivacy</code> à @BotFather, choisissez le bot, puis <b>Disable</b>.</li>
+        <li>Ajoutez le bot au groupe du magasin.</li>
+      </ol></details>
+    </div>
+  </section>
   <section class="carte">
     <div class="titre"><span class="num" id="n4">4</span><h2>Personnes autorisées</h2><span class="etat" id="e4"></span></div>
     <div class="corps">
@@ -242,7 +264,9 @@
       </details>
     </div>
   </section>
+  </div>
 
+  <div class="page" id="p-acces">
   <section class="carte">
     <div class="titre"><span class="num" id="n5">5</span><h2>Accès aux sites</h2><span class="etat" id="e5"></span></div>
     <div class="corps">
@@ -267,7 +291,6 @@
       <p class="petit">Adresse : ouvrez la page de connexion du site dans Chrome et copiez l'adresse en haut.</p>
     </div>
   </section>
-
   <section class="carte">
     <div class="titre"><span class="num" id="n6">6</span><h2>Boîtes mail</h2><span class="etat" id="e6"></span></div>
     <div class="corps">
@@ -316,7 +339,6 @@
       <div class="msg" id="m6m"></div>
     </div>
   </section>
-
   <section class="carte" id="c-google">
     <div class="titre"><h2>Compte Google de l'agent</h2><span class="etat" id="e-google"></span></div>
     <div class="corps">
@@ -328,7 +350,9 @@
       <div class="msg" id="m-google"></div>
     </div>
   </section>
+  </div>
 
+  <div class="page" id="p-savoir">
   <section class="carte">
     <div class="titre"><span class="num" id="n7">7</span><h2>Règles du magasin</h2><span class="etat" id="e7"></span></div>
     <div class="corps">
@@ -340,7 +364,6 @@
       <div class="msg" id="m7r"></div>
     </div>
   </section>
-
   <section class="carte">
     <div class="titre"><span class="num" id="n8">8</span><h2>Questionnaire du magasin</h2><span class="etat" id="e8"></span></div>
     <div class="corps">
@@ -356,17 +379,9 @@
         <pre class="savoir" id="savoir"></pre></details>
     </div>
   </section>
+  </div>
 
-  <section class="carte agent">
-    <img class="portrait cache" id="portrait" alt="">
-    <h2 style="margin:0;font-size:18px" id="agent-titre">Agent arrêté</h2>
-    <p id="agent-texte">Une fois démarré, un Chrome dédié s'ouvre. L'agent s'y connecte seul aux sites de la rubrique Accès.</p>
-    <button class="grand" id="b-demarrer">Démarrer l'agent</button>
-    <button class="grand danger cache" id="b-arreter">Arrêter l'agent</button>
-    <div class="msg" id="m6"></div>
-    <details id="d-journal"><summary>Journal de l'agent</summary><pre id="journal">…</pre></details>
-  </section>
-
+  <div class="page" id="p-reglages">
   <section class="carte">
     <div class="titre"><h2>Options de ce PC</h2></div>
     <div class="corps" style="margin-left:0">
@@ -392,6 +407,8 @@
       <table id="t-couts"></table>
     </div>
   </section>
+  </div>
+
 </main>
 
 <script>
@@ -427,6 +444,7 @@ async function action(bouton, msgId, fn, ok) {
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 function afficher(e) {
+  try { setTimeout(majOnglets, 0); } catch (x) {}
   etat = e;
   if (e.visage) afficherVisages(e.visage);
   if (e.ia) {
@@ -854,6 +872,24 @@ for (const [i, b] of [["i-compte-mdp", "b-compte"], ["i-bot", "b-bot"]]) $(i).on
 
 rafraichir();
 setInterval(rafraichir, 2500);
+
+// ---- onglets
+let ongletChoisi = null;
+function ouvrirOnglet(nom, choisi) {
+  if (choisi) ongletChoisi = nom;
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("actif", p.id === "p-" + nom));
+  document.querySelectorAll(".onglet").forEach(b => b.classList.toggle("actif", b.dataset.onglet === nom));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll(".onglet").forEach(b => b.onclick = () => ouvrirOnglet(b.dataset.onglet, true));
+function majOnglets() {
+  const demarrageOk = [1, 2, 3, 4].every(n => $("n" + n).classList.contains("ok"));
+  $("ong-demarrage").querySelector(".point").classList.toggle("cache", demarrageOk);
+  const g = (etat && etat.google_agent) || {};
+  $("ong-acces").querySelector(".point").classList.toggle("cache", !!g.fait || !!g.ouvert);
+  if (ongletChoisi === null) ouvrirOnglet(demarrageOk ? "agent" : "demarrage", false);
+}
+ouvrirOnglet("agent", false);
 </script>
 </body>
 </html>
