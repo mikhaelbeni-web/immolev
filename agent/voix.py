@@ -23,7 +23,7 @@ VOCABULAIRE = ("Gestion immobilière et développement foncier. Copropriété, s
                "appel de fonds, tantièmes, lot, règlement de copropriété, VEFA, permis de construire, PLU, compromis, "
                "promesse de vente, notaire, bail commercial, quittance, loyer, hôtel, taux d'occupation, prix moyen, RevPAR, "
                "TVA, SCI, LMNP, holding, bilan, liasse fiscale, revenu fiscal de référence, impots.gouv, URSSAF, "
-               "taxe foncière, CFE, IFI, rendez-vous.")
+               "taxe foncière, CFE, IFI, rendez-vous, adresse mail, arobase, gmail.com, hotmail.fr, outlook.fr.")
 _modele = None
 _verrou = threading.Lock()
 

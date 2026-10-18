@@ -244,11 +244,31 @@ class Pont:
             self._envoyer(chat_id, f"📋 Noté : tâche n° {tache.numero}, {avant} avant elle. Je la traiterai ensuite. "
                                    "Envoie /taches pour voir la file, « annuler {n} » pour en retirer une.".replace("{n}", str(tache.numero)))
 
+    def _conversation(self, chat_id: int) -> str:
+        """Privée, groupe sans autre personne, ou groupe partagé : décide si l'agent peut y donner des données sensibles."""
+        if chat_id > 0:  # Telegram : identifiant positif = conversation privée avec le bot
+            return "privée"
+        cache = self.__dict__.setdefault("_membres_groupe", {})
+        nombre, le = cache.get(chat_id, (None, 0.0))
+        if nombre is None or time.time() - le > 600:
+            try:
+                nombre = int(self.api.appeler("getChatMemberCount", chat_id=chat_id))
+            except Exception:
+                logging.exception("nombre de membres du groupe")
+                nombre = None
+            cache[chat_id] = (nombre, time.time())
+        if nombre is None:
+            return "groupe (nombre de membres inconnu : traite-le comme partagé)"
+        if nombre <= 2:  # la personne qui écrit + le bot
+            return "groupe sans autre personne (seulement la personne qui écrit et toi) : même confidentialité qu'en privé"
+        return f"groupe partagé ({nombre - 1} personnes)"
+
     def _executer(self, tache: Tache) -> None:
         chat_id, demande = tache.chat_id, tache.demande
         ctx = self._contexte(chat_id)
         recents = _echanges_recents(ctx.echanges)
-        complete = f"Échanges récents dans ce groupe :\n{recents}\nNouveau message : {demande}" if recents else demande
+        conversation = f"Conversation : {self._conversation(chat_id)}\n"
+        complete = conversation + (f"Échanges récents dans cette conversation :\n{recents}\nNouveau message : {demande}" if recents else demande)
         resultat = self.traiter_demande(complete, self._outils(ctx, chat_id))
         ctx.echanges.append((demande, resultat.texte or "Fait."))
         del ctx.echanges[:-3]

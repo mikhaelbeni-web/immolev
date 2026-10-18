@@ -119,7 +119,7 @@ def test_vocal_transcrit_puis_traite():
     tg = TelegramFactice()
     tg.telecharger = lambda file_id: b"OggS..."
     recu = []
-    pont = Pont(tg, {1}, traiter_demande=lambda d, o: (recu.append(d), Resultat("Fiche ouverte."))[1],
+    pont = Pont(tg, {1}, traiter_demande=lambda d, o: (recu.append(d.split("\n", 1)[1]), Resultat("Fiche ouverte."))[1],
                 transcrire=lambda audio: "ouvre la fiche de monsieur Dupont")
     pont.traiter_update({"message": {"message_id": 5, "from": {"id": 1}, "chat": {"id": 9}, "voice": {"file_id": "v1"}}})
     textes = tg.textes()
@@ -145,7 +145,7 @@ def test_demande_acces_puis_acceptation(tmp_path):
     registre = Registre(tmp_path, lambda: coffre["v"], lambda v: coffre.update(v=v))
     tg = TelegramFactice()
     recu = []
-    pont = Pont(tg, {1}, traiter_demande=lambda d, o: (recu.append(d), Resultat("ok"))[1], registre=registre)
+    pont = Pont(tg, {1}, traiter_demande=lambda d, o: (recu.append(d.split("\n", 1)[1]), Resultat("ok"))[1], registre=registre)
     inconnu = {"id": 42, "first_name": "Léa", "username": "lea"}
     pont.traiter_update({"message": {"message_id": 1, "from": inconnu, "chat": {"id": 42, "type": "private"}, "text": "/start"}})
     pont.traiter_update({"message": {"message_id": 2, "from": inconnu, "chat": {"id": 42, "type": "private"}, "text": "/start"}})
@@ -191,7 +191,7 @@ def test_file_des_taches(tmp_path, monkeypatch):
 
     def lent(demande, outils):
         feu.wait(5)
-        faites.append(demande.rsplit(": ", 1)[-1])
+        faites.append(demande.rsplit(": ", 1)[-1].split("\n")[-1])
         return Resultat("ok " + demande)
     pont = Pont(tg, {1}, traiter_demande=lent, asynchrone=True)
     msg = lambda t: {"message": {"message_id": 1, "from": {"id": 1}, "chat": {"id": 9}, "text": t}}
@@ -294,3 +294,17 @@ def test_echanges_survivent_au_redemarrage_de_l_agent(tmp_path, monkeypatch):
     neuf.traiter_update({"message": {"message_id": 2, "from": {"id": 11}, "chat": {"id": 5}, "text": "C"}})
     neuf._executer(neuf.file.pop(0))
     assert "C. trois" in recu[0] and recu[0].endswith("Nouveau message : C")
+
+
+def test_conversation_privee_groupe_seul_ou_partage():
+    class Tg(TelegramFactice):
+        def __init__(self, nombre):
+            super().__init__()
+            self.nombre = nombre
+
+        def appeler(self, methode, **p):
+            return self.nombre if methode == "getChatMemberCount" else super().appeler(methode, **p)
+
+    assert Pont(Tg(2), {1}, traiter_demande=lambda d, o: Resultat("ok"))._conversation(5) == "privée"
+    assert "sans autre personne" in Pont(Tg(2), {1}, traiter_demande=lambda d, o: Resultat("ok"))._conversation(-100)
+    assert "partagé (3 personnes)" in Pont(Tg(4), {1}, traiter_demande=lambda d, o: Resultat("ok"))._conversation(-100)
