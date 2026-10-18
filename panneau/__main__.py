@@ -499,14 +499,19 @@ class Etat:
             info["adresses"] = comptes_chrome(DONNEES / "chrome-agent")
         return info
 
-    def ouvrir_google_agent(self, adresse: str = "") -> None:
+    def ouvrir_google_agent(self, adresse: str = "", site: str = "") -> None:
         """Arrête l'agent le temps de la connexion (le profil Chrome ne sert qu'à une fenêtre), puis ouvre Google."""
         relancer = self.agent()["en_marche"] or bool(self.google_agent().get("relancer"))
         if self.agent()["en_marche"]:
             self.arreter_agent()
             time.sleep(2)
         url = "https://accounts.google.com/"
-        if "@" in adresse:
+        site = site.strip()
+        if site and "://" not in site:
+            site = "https://" + site
+        if site.startswith("https://"):  # page de connexion du site : on s'y connecte soi-même (Google ou mot de passe)
+            url = site
+        elif "@" in adresse:
             from urllib.parse import quote
             url = "https://accounts.google.com/AddSession?login_hint=" + quote(adresse)
         systeme.ouvrir_chrome_profil(url, DONNEES / "chrome-agent")
@@ -659,7 +664,7 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
             elif chemin == "/api/assistance/arreter":
                 etat.assistance.arreter()
             elif chemin == "/api/google-agent/ouvrir":
-                etat.ouvrir_google_agent(str(c.get("adresse", "")))
+                etat.ouvrir_google_agent(str(c.get("adresse", "")), str(c.get("site", "")))
             elif chemin == "/api/google-agent/terminer":
                 etat.terminer_google_agent()
             elif chemin == "/api/bot":

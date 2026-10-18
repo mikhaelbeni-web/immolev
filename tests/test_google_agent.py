@@ -59,3 +59,9 @@ def test_adresse_du_compte_google_lue_dans_le_profil_chrome(tmp_path, monkeypatc
 
 def test_sans_profil_chrome_aucune_adresse(tmp_path):
     assert pan.comptes_chrome(tmp_path / "absent") == []
+
+
+def test_se_connecter_a_un_site_ouvre_sa_page_de_connexion(tmp_path, monkeypatch):
+    e, journal = _etat(tmp_path, monkeypatch, False)
+    e.ouvrir_google_agent("moi@gmail.com", "https://www.rentila.com/login")
+    assert journal == [("chrome", "https://www.rentila.com/login", "chrome-agent")]

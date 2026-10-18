@@ -288,7 +288,7 @@
         </select>
       </div>
       <div class="ligne cache" id="l-site-gmail" style="margin-top:8px"><input type="email" id="i-site-gmail" placeholder="Adresse Gmail avec laquelle ce site est connecté"></div>
-      <p class="petit cache" id="p-site-gmail">Aucun mot de passe enregistré. Après « Enregistrer », clique « Connecter ce Gmail » sur la ligne du site : une fenêtre Google s'ouvre, tu te connectes toi-même, puis tu cliques « J'ai terminé » dans la carte « Compte Google de l'agent ».</p>
+      <p class="petit cache" id="p-site-gmail">Aucun mot de passe enregistré. Après « Enregistrer », clique « Se connecter à ce site » sur sa ligne : la page de connexion du site s'ouvre dans le Chrome de l'agent, tu te connectes toi-même (avec Google si le site le propose), puis tu cliques « J'ai terminé » dans la carte « Compte Google de l'agent ». L'agent garde ensuite la session ouverte.</p>
       <div class="ligne" style="margin-top:8px">
         <input type="text" id="i-site-id" placeholder="Identifiant" autocomplete="off">
         <input type="password" id="i-site-mdp" placeholder="Mot de passe" autocomplete="new-password">
@@ -520,7 +520,7 @@ function afficher(e) {
   fait(5, e.acces.length > 0, e.acces.length ? e.acces.length + " site(s)" : "");
   $("t-acces").innerHTML = e.acces.map(a =>
     `<tr><td><b>${esc(a.nom)}</b> <span class="petit">${esc(a.domaine)} · ${a.mode === "gmail" ? "Gmail : " + esc(a.gmail) : esc(a.apercu)}</span></td>
-     <td>${a.mode === "gmail" ? `<button data-gmail-site="${esc(a.gmail)}">Connecter ce Gmail</button> ` : ""}<button class="second" data-modifier-site="${esc(a.id)}">Modifier</button>
+     <td>${a.mode === "gmail" ? `<button data-gmail-site="${esc(a.gmail)}" data-url-site="${esc(a.url)}">Se connecter à ce site</button> ` : ""}<button class="second" data-modifier-site="${esc(a.id)}">Modifier</button>
          <button class="second" data-suppr-site="${esc(a.id)}">Supprimer</button></td></tr>`).join("");
   acces = e.acces;
 
@@ -895,7 +895,9 @@ document.addEventListener("click", async ev => {
       $("i-site-id").placeholder = "Identifiant (vide = inchangé)"; $("i-site-mdp").placeholder = "Mot de passe (vide = inchangé)";
       $("b-site-annuler").classList.remove("cache"); msg("m5", "Modification de " + a.nom, "att");
     }
-    if (d.gmailSite) { await api("/api/google-agent/ouvrir", {adresse: d.gmailSite}); msg("m5", "Fenêtre Google ouverte pour " + d.gmailSite + " : connecte-toi, ferme-la, puis clique « J'ai terminé » dans la carte « Compte Google de l'agent ».", "att"); await rafraichir(); }
+    if (d.gmailSite) { await api("/api/google-agent/ouvrir", {adresse: d.gmailSite, site: d.urlSite || ""}); msg("m5", (d.urlSite
+      ? "Le site s'ouvre dans le Chrome de l'agent : connecte-toi toi-même avec " + d.gmailSite + " (bouton Google s'il existe, sinon e-mail et mot de passe, et coche « Se souvenir de moi »)"
+      : "Fenêtre Google ouverte pour " + d.gmailSite + " : connecte-toi") + ", ferme la fenêtre, puis clique « J'ai terminé » dans la carte « Compte Google de l'agent ».", "att"); await rafraichir(); }
     if (d.supprSite && confirm("Supprimer cet accès ?")) { await api("/api/acces/supprimer", {id: d.supprSite}); await rafraichir(); }
     if (d.retirerMail && confirm("Retirer " + d.retirerMail + " ?")) { await api("/api/mail/retirer", {adresse: d.retirerMail}); await rafraichir(); }
     if (d.retirerGmail && confirm("Retirer " + d.retirerGmail + " ?")) { await api("/api/gmail/retirer", {adresse: d.retirerGmail}); await rafraichir(); }
