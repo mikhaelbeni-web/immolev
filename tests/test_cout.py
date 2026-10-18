@@ -13,7 +13,7 @@ def test_cout_par_type_de_jeton():
 
 
 def test_reglages_par_defaut_et_lus(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
     assert reglages() == {"modele": "standard", "plafond": 1.0}
     (tmp_path / "reglages-ia.json").write_text('{"modele": "economique", "plafond": "0.3"}')
     assert reglages() == {"modele": "economique", "plafond": 0.3}
@@ -34,7 +34,7 @@ class Cher:
 
 
 def test_plafond_arrete_la_demande_et_requete_economique(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
     (tmp_path / "reglages-ia.json").write_text(json.dumps({"modele": "standard", "plafond": 1.0}))
     claude = Cher()
     r = traiter("Va sur le site du syndic", {"lire_page": Outil("lire_page", "lit", {}, False, lambda: "page")}, claude)

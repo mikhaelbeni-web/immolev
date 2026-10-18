@@ -1,29 +1,29 @@
 from agent import fiche, orchestrateur
 
 
-def test_date_reglementation_et_fiche_dans_le_prompt(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
+def test_date_connaissances_et_fiche_dans_le_prompt(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
     texte = orchestrateur.systeme()
     assert texte.startswith("Nous sommes le ")
-    assert "Fiche réglementaire optique" in texte and "Guide MyEasyOptic" in texte
-    assert "Questions encore sans réponse" in texte and "portails" in texte
+    assert "Métiers de l'immobilier" in texte and "Vie personnelle du gestionnaire" in texte and "fiscalité de l'immobilier" in texte
+    assert "Questions encore sans réponse" in texte and "biens" in texte
 
 
 def test_questionnaire_et_completer(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
-    fiche.ecrire({"magasin": "Optizien Eyewear, Paris", "inconnue": "x", "horaires": "  "})
-    assert fiche.lire() == {"magasin": "Optizien Eyewear, Paris"}
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
+    fiche.ecrire({"identite": "Mikhael, gestionnaire foncier", "inconnue": "x", "horaires": "  "})
+    assert fiche.lire() == {"identite": "Mikhael, gestionnaire foncier"}
     assert "inconnue" in fiche.completer("inconnue", "x")
-    fiche.completer("portails", "Almerys → portail Almerys")
-    fiche.completer("portails", "Viamedis → portail Viamedis")
-    assert fiche.lire()["portails"] == "Almerys → portail Almerys ; Viamedis → portail Viamedis"
+    fiche.completer("biens", "Hôtel Le Parc, Nice")
+    fiche.completer("biens", "Résidence Les Pins, copro 38 lots")
+    assert fiche.lire()["biens"] == "Hôtel Le Parc, Nice ; Résidence Les Pins, copro 38 lots"
     texte = orchestrateur.systeme()
-    assert "Optizien Eyewear, Paris" in texte and "Viamedis → portail Viamedis" in texte
+    assert "gestionnaire foncier" in texte and "Résidence Les Pins" in texte
 
 
 def test_procedures(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
-    fiche.retenir_procedure("MyEasyOptic : créer une fiche client", "1. Menu Clients\n2. Bouton Nouveau")
-    assert "MyEasyOptic : créer une fiche client" in orchestrateur.systeme()
-    fiche.supprimer_procedure("MyEasyOptic : créer une fiche client")
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
+    fiche.retenir_procedure("Logiciel copro : saisir une facture", "1. Menu Comptabilité\n2. Bouton Nouvelle facture")
+    assert "Logiciel copro : saisir une facture" in orchestrateur.systeme()
+    fiche.supprimer_procedure("Logiciel copro : saisir une facture")
     assert fiche.procedures() == {}

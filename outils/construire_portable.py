@@ -1,6 +1,6 @@
-"""Fabrique Optizien.zip : dossier portable Windows (Python embarqué + code + panneau).
+"""Fabrique Immolev.zip : dossier portable Windows (Python embarqué + code + panneau).
 
-    python outils/construire_portable.py <cpython-3.12-windows-install_only_stripped.tar.gz> <dist/Optizien-v{n}.zip>
+    python outils/construire_portable.py <cpython-3.12-windows-install_only_stripped.tar.gz> <dist/Immolev-v{n}.zip>
 
 Le Python vient de python-build-standalone (astral-sh), vérifié par SHA256 avant l'appel.
 Les dépendances lourdes ne sont pas incluses : le panneau les installe au premier lancement.
@@ -17,11 +17,11 @@ from datetime import datetime
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
-CODE = ["agent", "ordonnance", "connecteurs", "panneau", "requirements-agent.txt", "connecteurs.exemple.json"]
+CODE = ["agent", "document", "connecteurs", "panneau", "requirements-agent.txt", "connecteurs.exemple.json"]
 INUTILE_PY = ["tcl", "Lib/tkinter", "Lib/idlelib", "Lib/turtledemo", "Lib/ensurepip", "Lib/test", "include", "libs",
               "DLLs/_tkinter.pyd", "DLLs/tcl86t.dll", "DLLs/tk86t.dll"]
 
-LANCEUR = r'''' Ouvre le panneau Optizien (aucune fenetre noire).
+LANCEUR = r'''' Ouvre le panneau Immolev (aucune fenetre noire).
 Set fso = CreateObject("Scripting.FileSystemObject")
 racine = fso.GetParentFolderName(WScript.ScriptFullName)
 Set sh = CreateObject("WScript.Shell")
@@ -29,11 +29,11 @@ sh.CurrentDirectory = racine & "\systeme\app"
 sh.Run """" & racine & "\systeme\python\pythonw.exe"" -m panneau", 0, False
 '''
 
-LISEZ_MOI = """OPTIZIEN - agent du magasin
+LISEZ_MOI = """IMMOLEV - agent du gestionnaire
 
-1. Double-cliquez sur « Ouvrir Optizien ».
+1. Double-cliquez sur « Ouvrir Immolev ».
 2. Suivez le panneau : composants, clé API Claude, bot Telegram, personnes autorisées.
-3. Cliquez sur « Démarrer l'agent », puis connectez-vous à MyEasyOptic dans le Chrome qui s'ouvre.
+3. Cliquez sur « Démarrer l'agent », puis connectez-vous à vos logiciels et à votre banque dans le Chrome qui s'ouvre.
 
 Prérequis : Windows 10 ou 11, Google Chrome, Internet.
 Aucune clé n'est enregistrée dans ce dossier : elles restent dans le coffre Windows de chaque PC.
@@ -42,7 +42,7 @@ Aucune clé n'est enregistrée dans ce dossier : elles restent dans le coffre Wi
 
 def construire(archive_python: Path, sortie: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
-        base = Path(tmp) / "Optizien"
+        base = Path(tmp) / "Immolev"
         systeme = base / "systeme"
         systeme.mkdir(parents=True)
         with tarfile.open(archive_python) as t:
@@ -71,8 +71,8 @@ def construire(archive_python: Path, sortie: Path) -> None:
         numero = int(numero_f.read_text().strip()) + 1 if numero_f.exists() else 1
         numero_f.write_text(str(numero))
         (app / "VERSION").write_text(str(numero), encoding="utf-8")
-        sortie = sortie.with_name(sortie.name.replace("{n}", str(numero)))  # ex. dist/Optizien-v{n}.zip → Optizien-v6.zip
-        (base / "Ouvrir Optizien.vbs").write_text(LANCEUR.replace("\n", "\r\n"), encoding="ascii")
+        sortie = sortie.with_name(sortie.name.replace("{n}", str(numero)))  # ex. dist/Immolev-v{n}.zip → Immolev-v6.zip
+        (base / "Ouvrir Immolev.vbs").write_text(LANCEUR.replace("\n", "\r\n"), encoding="ascii")
         (base / "LISEZ-MOI.txt").write_text(LISEZ_MOI.replace("\n", "\r\n"), encoding="utf-8-sig")
         sortie.parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(sortie, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:

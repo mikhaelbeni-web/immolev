@@ -1,5 +1,5 @@
 @echo off
-REM Installation de l'agent Optizien sur le PC du magasin (Windows 10/11).
+REM Installation de l'agent Immolev sur le PC du gestionnaire (Windows 10/11).
 chcp 65001 >nul
 cd /d "%~dp0"
 

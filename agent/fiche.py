@@ -1,7 +1,7 @@
-"""Fiche du magasin (questionnaire rempli dans le panneau ou complété sur Telegram) et procédures retenues.
+"""Fiche du gestionnaire (questionnaire rempli dans le panneau ou complété sur Telegram) et procédures retenues.
 
-<données>/fiche-magasin.json : {"id_question": "réponse"} ; <données>/procedures.json : {"nom": "étapes"}.
-Les deux sont ajoutés au prompt système. Jamais de donnée patient.
+<données>/fiche-gestionnaire.json : {"id_question": "réponse"} ; <données>/procedures.json : {"nom": "étapes"}.
+Les deux sont ajoutés au prompt système. Jamais de donnée personnelle.
 """
 from __future__ import annotations
 
@@ -15,26 +15,27 @@ CONNAISSANCES = Path(__file__).with_name("connaissances")
 
 # (identifiant, thème, question, exemple de réponse)
 QUESTIONS = [
-    ("magasin", "Le magasin", "Nom du magasin, adresse et téléphone", "Optizien Eyewear, 12 rue …, 75011 Paris, 01 …"),
-    ("enseigne", "Le magasin", "Enseigne, groupement ou centrale d'achat (ou indépendant)", "Indépendant, adhérent à …"),
-    ("finess", "Le magasin", "N° FINESS et SIRET (utiles pour les portails)", ""),
-    ("horaires", "Le magasin", "Horaires d'ouverture", "Mardi-samedi 10h-19h"),
-    ("equipe", "L'équipe", "Qui travaille au magasin, avec quel rôle ?", "Mikhael : opticien gérant ; Sarah : opticienne"),
-    ("validation", "L'équipe", "Qui valide quoi (devis, PEC, commandes, remises) ?", "Les devis > 800 € sont validés par Mikhael"),
-    ("reseaux", "Tiers payant", "Réseaux de soins partenaires du magasin", "Kalivia, Santéclair, Itelis…"),
-    ("portails", "Tiers payant", "Quel opérateur ou réseau sur la carte → quel portail ?", "Almerys → portail Almerys ; Viamedis → portail Viamedis"),
-    ("pec_habitudes", "Tiers payant", "Comment faites-vous les prises en charge ? (MyEasyOptic ou portail, qui relance, quand)", ""),
-    ("deroule", "Façon de travailler", "Étapes d'un dossier chez vous, de l'ordonnance à la livraison", "Ordonnance → fiche client → devis → PEC → commande → livraison → facture"),
-    ("saisie", "Façon de travailler", "Habitudes de saisie dans MyEasyOptic", "Toujours renseigner le prescripteur et le RPPS"),
-    ("fournisseurs", "Fournisseurs", "Laboratoires de verres et fournisseurs principaux, délais habituels", "Verres : … (5 jours)"),
-    ("tarifs", "Commerce", "Offres et politique tarifaire (2e paire, remises, 100 % Santé)", ""),
-    ("mails", "Communication", "Adresse mail du magasin et signature des mails", ""),
-    ("ton", "Communication", "Comment l'agent doit-il répondre à l'équipe ?", "Court, tutoiement, sans formule de politesse"),
-    ("societe", "Gestion de la société", "Forme juridique, date de clôture de l'exercice et régime de TVA", "SARL, clôture 31/12, TVA mensuelle"),
-    ("comptable", "Gestion de la société", "Expert-comptable (cabinet, contact) et logiciel de comptabilité ou de paie", "Cabinet …, envoi des pièces le 5 du mois ; logiciel …"),
-    ("salaries", "Gestion de la société", "Salariés : nombre, contrats, qui fait la paie, convention collective", "3 salariés, paie par le cabinet, convention optique-lunetterie"),
-    ("charges", "Gestion de la société", "Charges principales et échéances (loyer, assurances, emprunts, URSSAF)", "Loyer le 1er, URSSAF le 15, emprunt le 5"),
-    ("confidentiel", "Gestion de la société", "Qui peut voir les données sensibles (salaires, comptes, trésorerie) ?", "Seulement Mikhael"),
+    ("identite", "Le gestionnaire", "Votre nom, fonction et employeur ou société", "Mikhael B., gestionnaire de développement foncier chez …"),
+    ("perimetre", "Le gestionnaire", "Activités suivies : promotion, hôtels, copropriétés, gestion locative, transactions…", "2 programmes en VEFA, 1 hôtel, 6 copropriétés"),
+    ("biens", "Le gestionnaire", "Biens et opérations gérés (nom court, adresse, rôle de chacun)", "Hôtel Le Parc (Nice, 42 chambres) ; Résidence Les Pins (copro 38 lots)"),
+    ("equipe", "L'équipe", "Qui travaille avec vous, avec quel rôle ?", "Sarah : assistante ; cabinet X : comptable"),
+    ("validation", "L'équipe", "Qui valide quoi (devis, paiements, appels de fonds, travaux) ?", "Paiements > 5 000 € validés par Mikhael"),
+    ("logiciels", "Outils", "Logiciels utilisés et pour quoi (copropriété, gestion locative, hôtel, comptabilité, banque)", "Copro : … ; hôtel : PMS … ; compta : …"),
+    ("deroule", "Façon de travailler", "Étapes d'un dossier type chez vous (opération, sinistre, travaux, clôture)", "Devis → validation → ordre de service → facture → paiement → classement"),
+    ("prestataires", "Façon de travailler", "Prestataires et partenaires habituels (notaire, architecte, entreprises, syndic, banque)", "Notaire : Me … ; banque : …"),
+    ("copro_habitudes", "Copropriétés", "Assemblées générales, appels de fonds, conseil syndical : vos habitudes et échéances", "AG en mai, appels trimestriels le 1er"),
+    ("hotel_habitudes", "Hôtels", "Indicateurs suivis et rythme de reporting (TO, prix moyen, RevPAR…)", "Rapport hebdo le lundi"),
+    ("mails", "Communication", "Adresses mail utilisées (pro, perso) et signature des mails", ""),
+    ("ton", "Communication", "Comment l'agent doit-il vous répondre ?", "Court, tutoiement, sans formule de politesse"),
+    ("societe", "Votre société", "Votre société : forme juridique, activité, date de clôture, régime de TVA et d'impôt", "SAS, holding, clôture 31/12, IS"),
+    ("comptable", "Votre société", "Expert-comptable (cabinet, contact) et logiciel de comptabilité", "Cabinet …, envoi des pièces le 5 du mois"),
+    ("remuneration", "Votre société", "Comment vous vous rémunérez (salaire, dividendes, honoraires) et à quel rythme", "Salaire mensuel + dividendes en juin"),
+    ("charges", "Votre société", "Charges et échéances récurrentes (loyers, emprunts, URSSAF, assurances)", "Emprunt le 5, URSSAF le 15"),
+    ("foyer", "Vie personnelle", "Foyer fiscal : situation, nombre de parts, personnes à charge", "Marié, 2 enfants, 3 parts"),
+    ("revenus", "Vie personnelle", "Sources de revenus du foyer (salaires, dividendes, revenus fonciers, LMNP, SCI)", "Salaire, dividendes, 2 appartements en location nue"),
+    ("patrimoine", "Vie personnelle", "Patrimoine immobilier et financier à suivre (SCI, biens, crédits, placements)", "SCI familiale (2 biens), résidence principale avec crédit"),
+    ("echeances_perso", "Vie personnelle", "Échéances personnelles à rappeler (déclaration de revenus, taxe foncière, assurances)", "Déclaration en ligne en mai"),
+    ("confidentiel", "Limites", "Qui peut voir les données sensibles (revenus, impôts, comptes, salaires) ?", "Seulement Mikhael, en message privé"),
     ("interdits", "Limites", "Ce que l'agent ne doit jamais faire", ""),
 ]
 IDS = {q[0] for q in QUESTIONS}
@@ -55,11 +56,11 @@ def _ecrire(nom: str, d: dict) -> None:
 
 
 def lire() -> dict:
-    return {k: v for k, v in _lire("fiche-magasin.json").items() if k in IDS and str(v).strip()}
+    return {k: v for k, v in _lire("fiche-gestionnaire.json").items() if k in IDS and str(v).strip()}
 
 
 def ecrire(reponses: dict) -> None:
-    _ecrire("fiche-magasin.json", {k: " ".join(str(v).split())[:1500] for k, v in reponses.items() if k in IDS and str(v).strip()})
+    _ecrire("fiche-gestionnaire.json", {k: " ".join(str(v).split())[:1500] for k, v in reponses.items() if k in IDS and str(v).strip()})
 
 
 def completer(question: str, reponse: str) -> str:
@@ -72,7 +73,7 @@ def completer(question: str, reponse: str) -> str:
     d = lire()
     d[question] = f"{d[question]} ; {reponse}" if d.get(question) else reponse
     ecrire(d)
-    return f"Fiche du magasin complétée ({question}). L'opticien peut la modifier dans le panneau, carte Questionnaire."
+    return f"Fiche du gestionnaire complétée ({question}). Le gestionnaire peut la modifier dans le panneau, carte Questionnaire."
 
 
 def procedures() -> dict:
@@ -120,7 +121,7 @@ def texte_prompt() -> str:
     d = lire()
     lignes = [f"- {q} : {d[i]}" for i, _, q, _ in QUESTIONS if i in d]
     manque = [i for i, *_ in QUESTIONS if i not in d]
-    parties = ["# Fiche du magasin (questionnaire rempli par l'opticien)\n" + ("\n".join(lignes) if lignes else "(vide)")]
+    parties = ["# Fiche du gestionnaire (questionnaire rempli par le gestionnaire)\n" + ("\n".join(lignes) if lignes else "(vide)")]
     if manque:
         parties.append("Questions encore sans réponse (identifiants) : " + ", ".join(manque) + ".\nSi l'une d'elles t'empêche "
                        "de bien faire une tâche, pose la question à l'équipe en une ligne, puis propose completer_fiche avec "
@@ -131,7 +132,7 @@ def texte_prompt() -> str:
                        "\n".join(f"- {site} : " + " | ".join(n) for site, n in ns.items()))
     p = procedures()
     if p:
-        parties.append("# Procédures retenues dans ce magasin (suis-les en priorité)\n" +
+        parties.append("# Procédures retenues chez ce gestionnaire (suis-les en priorité)\n" +
                        "\n\n".join(f"## {n}\n{e}" for n, e in p.items()))
     parties.append("Quand tu as mené à bien une tâche sur un site en cherchant ton chemin, propose retenir_procedure avec les "
                    "étapes exactes (écrans, champs, boutons), sans aucune donnée de client.")

@@ -1,12 +1,12 @@
 """Pont Telegram : n'écoute que les membres autorisés, garde les photos en mémoire, demande un clic avant chaque écriture.
 
-Lancer sur l'ordinateur du magasin :
+Lancer sur l'ordinateur du gestionnaire :
     export TELEGRAM_TOKEN=...            # jeton du bot (@BotFather), dans le coffre de secrets
     export TELEGRAM_MEMBRES=123,456      # identifiants Telegram numériques autorisés
     export ANTHROPIC_API_KEY=...
-    export CHROME_PROFIL=profil-chrome   # profil Chrome dédié, où l'opticien s'est connecté une fois
+    export CHROME_PROFIL=profil-chrome   # profil Chrome dédié, où le gestionnaire s'est connecté une fois
     export CONNECTEURS=connecteurs.json   # facultatif : connecteurs MCP (Gmail, Outlook…)
-    export TELEGRAM_PHOTOS=0             # facultatif : refuser les photos d'ordonnance (acceptées par défaut, choix du 15/10)
+    export TELEGRAM_PHOTOS=0             # facultatif : refuser les photos de documents (acceptées par défaut, choix du 15/10)
     python3 -m agent.telegram
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ from typing import Any, Callable, Protocol
 
 import httpx
 
-from ordonnance.destination import Destination, LogicielNonConfigure, tracer
+from document.destination import Destination, LogicielNonConfigure, tracer
 
 from .connecteurs_mcp import ConnecteursMCP
 from . import fiche, regles
@@ -30,7 +30,7 @@ from .acces import dossier_donnees
 from .membres import Registre
 from .navigateur import Navigateur, outils_navigateur
 from .orchestrateur import ActionEnAttente, Resultat, executer_confirmee, traiter
-from .outils import Contexte, Outil, apercu_ordonnance, catalogue
+from .outils import Contexte, Outil, apercu_document, catalogue
 
 DUREE_VIE_S = 3600
 
@@ -148,15 +148,15 @@ class Pont:
         if self.connecteurs:
             outils.update(self.connecteurs.outils())
         outils["retenir_regle"] = Outil(
-            "retenir_regle", "Ajoute une règle de fonctionnement du magasin, que tu appliqueras à toutes les demandes suivantes. "
-            "Une ligne, sans nom ni donnée de patient.", {"regle": {"type": "string"}}, True, regles.ajouter)
+            "retenir_regle", "Ajoute une règle de fonctionnement du gestionnaire, que tu appliqueras à toutes les demandes suivantes. "
+            "Une ligne, sans nom ni donnée personnelle.", {"regle": {"type": "string"}}, True, regles.ajouter)
         outils["completer_fiche"] = Outil(
-            "completer_fiche", "Complète la fiche du magasin (questionnaire) avec une réponse donnée par l'équipe. "
-            "question : identifiant de la question (ex. 'portails', 'equipe') ; reponse : une ou deux lignes, sans donnée de patient.",
+            "completer_fiche", "Complète la fiche du gestionnaire (questionnaire) avec une réponse donnée par l'équipe. "
+            "question : identifiant de la question (ex. 'portails', 'equipe') ; reponse : une ou deux lignes, sans donnée personnelle.",
             {"question": {"type": "string"}, "reponse": {"type": "string"}}, True, fiche.completer)
         outils["retenir_procedure"] = Outil(
             "retenir_procedure", "Retient les étapes exactes d'une tâche réussie sur un site (écrans, champs, boutons), pour la "
-            "refaire sans chercher. nom : ex. 'MyEasyOptic : créer une fiche client'. Aucune donnée de client.",
+            "refaire sans chercher. nom : ex. 'Logiciel copro : saisir une facture fournisseur'. Aucune donnée personnelle.",
             {"nom": {"type": "string"}, "etapes": {"type": "string"}}, True, fiche.retenir_procedure)
         outils["noter_site"] = Outil(
             "noter_site", "Note une information technique sur un site pour la prochaine fois : méthode de connexion qui marche, "
@@ -208,7 +208,7 @@ class Pont:
                 self.api.appeler("deleteMessage", chat_id=chat_id, message_id=msg["message_id"])
             except Exception:
                 pass
-            return self._envoyer(chat_id, "Photo effacée : les ordonnances passent par la page web du magasin, pas par Telegram.")
+            return self._envoyer(chat_id, "Photo effacée : les documents passent par la page web d'Immolev, pas par Telegram.")
         if msg.get("photo"):
             photo_id = f"photo{len(ctx.photos) + 1}"
             ctx.photos[photo_id] = (self.api.telecharger(msg["photo"][-1]["file_id"]), "image/jpeg")
@@ -216,7 +216,7 @@ class Pont:
                 self.api.appeler("deleteMessage", chat_id=chat_id, message_id=msg["message_id"])
             except Exception:
                 pass
-            demande = f"{demande or 'Lis cette ordonnance et saisis-la dans MyEasyOptic.'}\n(Photo reçue : {photo_id})"
+            demande = f"{demande or 'Lis ce document, contrôle-le et prépare son classement.'}\n(Photo reçue : {photo_id})"
         if not demande:
             return
         commande = demande.strip().lower()
@@ -258,8 +258,8 @@ class Pont:
             self.actions[action.id] = (chat_id, action)
             self.actions_le[action.id] = time.time()
             self._sauver_actions()
-            ordo = ctx.ordonnances.get(action.parametres.get("photo_id", ""))
-            apercu = f"\nVérifie contre l'ordonnance papier :\n{apercu_ordonnance(ordo)}" if ordo else ""
+            doc = ctx.documents.get(action.parametres.get("photo_id", ""))
+            apercu = f"\nVérifie contre le document papier :\n{apercu_document(doc)}" if doc else ""
             if action.outil == "cliquer_bouton" and self.navigateur:
                 try:
                     apercu = "\n" + self.navigateur.apercu_formulaire(action.parametres["ref"])
@@ -391,7 +391,7 @@ class Pont:
         if not demande:
             return
         if chat.get("type") == "private":
-            self._envoyer(chat["id"], "Demande d'accès envoyée au magasin. Vous pourrez m'écrire dès qu'elle sera acceptée.")
+            self._envoyer(chat["id"], "Demande d'accès envoyée au gestionnaire. Vous pourrez m'écrire dès qu'elle sera acceptée.")
         pseudo = f" (@{demande['pseudo']})" if demande.get("pseudo") else ""
         for membre in self.membres:  # en privé : marche si le membre a déjà écrit au bot une fois
             try:
@@ -413,7 +413,7 @@ class Pont:
             try:
                 from .orchestrateur import prenom
                 nom = prenom()
-                self._envoyer(int(ident), f"Accès accepté. Ici {nom}, l'agent Optizien du magasin : vous pouvez m'écrire."
+                self._envoyer(int(ident), f"Accès accepté. Ici {nom}, l'agent Immolev : vous pouvez m'écrire."
                               if nom else "Accès accepté : vous pouvez m'écrire.")
             except Exception:
                 pass
@@ -497,13 +497,13 @@ class Pont:
 
 
 def message_erreur(e: Exception) -> str:
-    """Erreur lisible par l'équipe du magasin (le détail technique reste dans systeme/journal/agent.log)."""
+    """Erreur lisible par l'équipe du gestionnaire (le détail technique reste dans systeme/journal/agent.log)."""
     texte = str(e).lower()
     if "credit balance" in texte:
         return ("Plus de crédit sur le compte Claude : rechargez sur console.anthropic.com → Plans & Billing, "
                 "puis renvoyez la demande.")
     if "authentication" in texte or "invalid x-api-key" in texte:
-        return "La clé API Claude est refusée : vérifiez-la dans le panneau Optizien (carte Clé API)."
+        return "La clé API Claude est refusée : vérifiez-la dans le panneau Immolev (carte Clé API)."
     if "overloaded" in texte or "rate limit" in texte or "rate_limit" in texte:
         return "Claude est surchargé pour le moment : réessayez dans une minute."
     return f"Erreur : {type(e).__name__} (détails dans le journal de l'agent)."
@@ -526,11 +526,11 @@ def secret(nom: str) -> str:
     if not valeur:
         try:
             from . import coffre
-            valeur = coffre.get_password("optizien", nom)
+            valeur = coffre.get_password("immolev", nom)
         except Exception:
             valeur = None
     if not valeur:
-        raise SystemExit(f"{nom} manquant : ouvrir Optizien et compléter les réglages")
+        raise SystemExit(f"{nom} manquant : ouvrir Immolev et compléter les réglages")
     return valeur
 
 
@@ -538,9 +538,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     for bavard in ("httpx", "httpx2", "httpcore"):  # leurs lignes contiennent le jeton du bot
         logging.getLogger(bavard).setLevel(logging.WARNING)
-    try:  # compte Optizien : l'agent passe par la passerelle du site, sans clé API sur ce PC
+    try:  # compte Immolev : l'agent passe par la passerelle du site, sans clé API sur ce PC
         from . import passerelle
-        compte = json.loads(secret("OPTIZIEN_COMPTE"))
+        compte = json.loads(secret("IMMOLEV_COMPTE"))
         os.environ.update(passerelle.environnement(compte))
     except SystemExit:  # pas de compte : ancienne installation avec sa propre clé
         os.environ["ANTHROPIC_API_KEY"] = secret("ANTHROPIC_API_KEY")

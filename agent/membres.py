@@ -2,7 +2,7 @@
 
 Quiconque écrit au bot sans être autorisé (/start compris) devient une demande : elle s'affiche dans
 le panneau et chez les membres déjà autorisés (boutons Accepter / Refuser dans Telegram).
-Identifiants autorisés : coffre Windows (service optizien, TELEGRAM_MEMBRES), comme avant.
+Identifiants autorisés : coffre Windows (service immolev, TELEGRAM_MEMBRES), comme avant.
 Noms : membres.json ; demandes : demandes.json ; refus : refus.json (une personne refusée ne relance plus).
 """
 from __future__ import annotations
@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-SERVICE = "optizien"
+SERVICE = "immolev"
 
 
 def _keyring_lire() -> str | None:

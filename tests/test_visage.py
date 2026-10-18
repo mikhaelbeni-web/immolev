@@ -25,7 +25,7 @@ def test_choix_envoie_photo_et_nom(tmp_path, monkeypatch):
 
 
 def test_prenom_dans_le_prompt(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPTIZIEN_DONNEES", str(tmp_path))
+    monkeypatch.setenv("IMMOLEV_DONNEES", str(tmp_path))
     (tmp_path / "visage.json").write_text('{"id": "lea", "nom": "Léa"}', encoding="utf-8")
     from agent import orchestrateur
     assert orchestrateur.systeme().startswith("Tu t'appelles Léa")

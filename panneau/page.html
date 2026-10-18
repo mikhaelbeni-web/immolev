@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Optizien</title>
+<title>Immolev</title>
 <link rel="icon" href="/icone">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* Identité Optizien Eyewear : noir, ivoire, laiton. Titres en Cormorant, texte en Inter. */
+  /* Identité Immolev : noir, ivoire, laiton. Titres en Cormorant, texte en Inter. */
   :root {
     --fond: #f6f3ee; --carte: #fffdfa; --texte: #16130f; --doux: #6f675c; --bord: #e6dfd4;
     --encre: #16130f; --laiton: #a8834a; --laiton-doux: #f3ebdd;
@@ -161,13 +161,13 @@
 </style>
 </head>
 <body>
-<div id="coupure" class="msg err" hidden style="margin:0;border-radius:0;text-align:center;font-weight:600">Cette fenêtre n'est plus reliée à Optizien. Fermez-la, puis rouvrez Optizien avec « Ouvrir Optizien ».</div>
+<div id="coupure" class="msg err" hidden style="margin:0;border-radius:0;text-align:center;font-weight:600">Cette fenêtre n'est plus reliée à Immolev. Fermez-la, puis rouvrez Immolev avec « Ouvrir Immolev ».</div>
 <header>
-  <div><img class="logo" src="/logo" alt="Optizien"><h1>Optizien</h1><div class="sous">Agent du magasin · version <span id="version"></span></div></div>
+  <div><img class="logo" src="/logo" alt="Immolev"><h1>Immolev</h1><div class="sous">Agent du gestionnaire · version <span id="version"></span></div></div>
   <button class="second" id="b-actualiser" style="margin-left:auto">Actualiser</button>
   <span id="pastille" class="pastille off" style="margin-left:0">Agent arrêté</span>
 </header>
-<nav class="onglets" id="onglets"><button class="onglet" data-onglet="agent" id="ong-agent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg><span>Agent</span><i class="point cache"></i></button><button class="onglet" data-onglet="demarrage" id="ong-demarrage"><svg viewBox="0 0 24 24"><path d="M12 3c3 2 5 5 5 9l-2 3H9l-2-3c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M9 18l-1 3M15 18l1 3"/></svg><span>Démarrage</span><i class="point cache"></i></button><button class="onglet" data-onglet="acces" id="ong-acces"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg><span>Accès et mails</span><i class="point cache"></i></button><button class="onglet" data-onglet="savoir" id="ong-savoir"><svg viewBox="0 0 24 24"><path d="M4 5.5C6 4.5 9 4.5 12 6c3-1.5 6-1.5 8-.5V18c-2-1-5-1-8 .5-3-1.5-6-1.5-8-.5z"/><path d="M12 6v12.5"/></svg><span>Savoir du magasin</span><i class="point cache"></i></button><button class="onglet" data-onglet="reglages" id="ong-reglages"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Réglages</span><i class="point cache"></i></button></nav>
+<nav class="onglets" id="onglets"><button class="onglet" data-onglet="agent" id="ong-agent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg><span>Agent</span><i class="point cache"></i></button><button class="onglet" data-onglet="demarrage" id="ong-demarrage"><svg viewBox="0 0 24 24"><path d="M12 3c3 2 5 5 5 9l-2 3H9l-2-3c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M9 18l-1 3M15 18l1 3"/></svg><span>Démarrage</span><i class="point cache"></i></button><button class="onglet" data-onglet="acces" id="ong-acces"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg><span>Accès et mails</span><i class="point cache"></i></button><button class="onglet" data-onglet="savoir" id="ong-savoir"><svg viewBox="0 0 24 24"><path d="M4 5.5C6 4.5 9 4.5 12 6c3-1.5 6-1.5 8-.5V18c-2-1-5-1-8 .5-3-1.5-6-1.5-8-.5z"/><path d="M12 6v12.5"/></svg><span>Savoir de l'agent</span><i class="point cache"></i></button><button class="onglet" data-onglet="reglages" id="ong-reglages"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Réglages</span><i class="point cache"></i></button></nav>
 <main>
   <section class="carte bandeau cache" id="c-maj">
     <div class="ligne"><div style="flex:1"><b>Nouvelle version disponible</b> <span class="petit" id="maj-version"></span><br>
@@ -218,11 +218,11 @@
     </div>
   </section>
   <section class="carte">
-    <div class="titre"><span class="num" id="n2">2</span><h2>Compte Optizien</h2><span class="etat" id="e2"></span></div>
+    <div class="titre"><span class="num" id="n2">2</span><h2>Compte Immolev</h2><span class="etat" id="e2"></span></div>
     <div class="corps">
-      <p class="petit" id="p-compte">Le compte du magasin donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Optizien.</p>
+      <p class="petit" id="p-compte">Le compte du gestionnaire donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Immolev.</p>
       <div class="ligne" id="f-compte">
-        <input type="text" id="i-compte-id" placeholder="Identifiant Optizien" autocomplete="off">
+        <input type="text" id="i-compte-id" placeholder="Identifiant Immolev" autocomplete="off">
         <input type="password" id="i-compte-mdp" placeholder="Mot de passe" autocomplete="new-password">
         <button id="b-compte">Se connecter</button>
       </div>
@@ -242,7 +242,7 @@
         <li>Donnez un nom, puis un identifiant qui finit par <code>bot</code>.</li>
         <li>Copiez la ligne du jeton (<code>123456789:AAH…</code>) et collez-la ici.</li>
         <li>Envoyez <code>/setprivacy</code> à @BotFather, choisissez le bot, puis <b>Disable</b>.</li>
-        <li>Ajoutez le bot au groupe du magasin.</li>
+        <li>Ajoutez le bot au groupe de l'équipe.</li>
       </ol></details>
     </div>
   </section>
@@ -274,8 +274,8 @@
       <table id="t-acces"></table>
       <div class="ligne" style="margin-top:10px">
         <select id="i-site-nom" class="champ">
-          <option>MyEasyOptic</option><option>Almerys</option><option>Viamedis</option><option>SP Santé</option>
-          <option>iSanté</option><option>TP+</option><option>Génération</option><option>Mercer</option><option>Ociane</option>
+          <option>Logiciel copropriété</option><option>Logiciel gestion locative</option><option>PMS hôtel</option><option>Logiciel comptabilité</option>
+          <option>Banque pro</option><option>Banque perso</option><option>Impots particulier</option><option>Impots professionnel</option><option>URSSAF</option>
           <option value="">Autre…</option>
         </select>
         <input type="text" id="i-site-autre" class="cache" placeholder="Nom du site">
@@ -317,9 +317,9 @@
       <div class="msg" id="m6o"></div>
 
       <div id="gmail-client" class="cache encart">
-        <p><b>Réglage unique pour activer « Continuer avec Google »</b> (une fois pour toutes, le fichier suit ensuite le dossier Optizien sur les autres PC).</p>
+        <p><b>Réglage unique pour activer « Continuer avec Google »</b> (une fois pour toutes, le fichier suit ensuite le dossier Immolev sur les autres PC).</p>
         <ol>
-          <li>Sur <b>console.cloud.google.com</b>, créez un projet « Optizien ».</li>
+          <li>Sur <b>console.cloud.google.com</b>, créez un projet « Immolev ».</li>
           <li>Activez l'<b>API Gmail</b> (Bibliothèque → Gmail API → Activer).</li>
           <li><b>Écran de consentement OAuth</b> : type Externe, puis <b>Publier l'application</b> (sinon la connexion expire au bout de 7 jours).</li>
           <li><b>Identifiants → Créer → ID client OAuth → Application de bureau</b>, puis téléchargez le fichier JSON.</li>
@@ -341,7 +341,7 @@
         </details>
         <details><summary>Gmail sans Google Cloud : code d'application</summary><ol>
           <li>Ouvrez <b>myaccount.google.com/apppasswords</b> (validation en 2 étapes requise).</li>
-          <li>Nom : <code>Optizien</code> → <b>Créer</b>, puis collez le code de 16 lettres ci-dessus.</li>
+          <li>Nom : <code>Immolev</code> → <b>Créer</b>, puis collez le code de 16 lettres ci-dessus.</li>
         </ol></details>
       </div>
       <div class="msg" id="m6m"></div>
@@ -362,9 +362,9 @@
 
   <div class="page" id="p-savoir">
   <section class="carte">
-    <div class="titre"><span class="num" id="n7">7</span><h2>Règles du magasin</h2><span class="etat" id="e7"></span></div>
+    <div class="titre"><span class="num" id="n7">7</span><h2>Règles du gestionnaire</h2><span class="etat" id="e7"></span></div>
     <div class="corps">
-      <p class="petit">Tout ce que l'agent doit savoir pour éviter les questions : mutuelles et portails, habitudes de saisie, qui valide quoi… Remplacez les exemples « (ex.) ». Aucune donnée de patient ici. Sur Telegram, « retiens : … » ajoute une règle après confirmation.</p>
+      <p class="petit">Tout ce que l'agent doit savoir pour éviter les questions : biens et opérations suivis, habitudes de traitement, qui valide quoi… Remplacez les exemples « (ex.) ». Aucune donnée personnelle ici. Sur Telegram, « retiens : … » ajoute une règle après confirmation.</p>
       <textarea id="i-regles" rows="14" spellcheck="true"></textarea>
       <div class="ligne" style="margin-top:10px">
         <div id="dictee-regles"></div>
@@ -373,9 +373,9 @@
     </div>
   </section>
   <section class="carte">
-    <div class="titre"><span class="num" id="n8">8</span><h2>Questionnaire du magasin</h2><span class="etat" id="e8"></span></div>
+    <div class="titre"><span class="num" id="n8">8</span><h2>Questionnaire du gestionnaire</h2><span class="etat" id="e8"></span></div>
     <div class="corps">
-      <p class="petit">Plus l'agent connaît votre magasin, moins il pose de questions. Répondez à ce que vous pouvez, en une ou deux lignes ; il demandera le reste sur Telegram au fil des tâches et complétera ce questionnaire après votre accord. Aucune donnée de patient ici.</p>
+      <p class="petit">Plus l'agent connaît votre activité, moins il pose de questions. Répondez à ce que vous pouvez, en une ou deux lignes ; il demandera le reste sur Telegram au fil des tâches et complétera ce questionnaire après votre accord. Aucune donnée personnelle ici.</p>
       <div class="barre fiche-barre"><div id="fiche-progres"></div></div>
       <div id="fiche-questions"></div>
       <div class="ligne" style="margin-top:12px"><button id="b-fiche" style="margin-left:auto">Enregistrer le questionnaire</button></div>
@@ -383,7 +383,7 @@
       <details><summary id="proc-titre">Procédures apprises par l'agent</summary>
         <p class="petit">Quand l'agent réussit une tâche sur un site, il propose d'en retenir les étapes exactes ; il les suit ensuite sans chercher. Supprimez une procédure si elle n'est plus bonne.</p>
         <div id="proc-liste"></div></details>
-      <details><summary>Ce que l'agent sait déjà (réglementation optique, MyEasyOptic)</summary>
+      <details><summary>Ce que l'agent sait déjà (immobilier, copropriété, hôtellerie, fiscalité, vie personnelle)</summary>
         <pre class="savoir" id="savoir"></pre></details>
     </div>
   </section>
@@ -394,9 +394,9 @@
     <div class="titre"><h2>Options de ce PC</h2></div>
     <div class="corps" style="margin-left:0">
       <label class="case"><input type="checkbox" id="c-demarrage"> Démarrer l'agent automatiquement à l'allumage du PC</label>
-      <div class="ligne" style="margin-top:12px"><button class="second" id="b-bureau">Créer un raccourci Optizien sur le Bureau</button>
+      <div class="ligne" style="margin-top:12px"><button class="second" id="b-bureau">Créer un raccourci Immolev sur le Bureau</button>
         <button class="danger" id="b-quitter">Tout fermer</button></div>
-      <div class="ligne" style="margin-top:12px"><label class="petit" for="i-maj">Mettre à jour depuis un fichier Optizien.zip :</label>
+      <div class="ligne" style="margin-top:12px"><label class="petit" for="i-maj">Mettre à jour depuis un fichier Immolev.zip :</label>
         <input type="file" id="i-maj" accept=".zip"></div>
       <div class="msg" id="m7"></div>
       <h3 class="sous-titre">Intelligence de l'agent</h3>
@@ -429,12 +429,12 @@ async function api(chemin, corps) {
   try {
     r = await fetch(chemin, {
       method: corps === undefined ? "GET" : "POST",
-      headers: {"X-Optizien": JETON, "Content-Type": "application/json"},
+      headers: {"X-Immolev": JETON, "Content-Type": "application/json"},
       body: corps === undefined ? undefined : JSON.stringify(corps),
     });
   } catch (e) {
     $("coupure").hidden = false;
-    throw new Error("Cette fenêtre n'est plus reliée à Optizien. Fermez-la, puis rouvrez Optizien avec « Ouvrir Optizien ».");
+    throw new Error("Cette fenêtre n'est plus reliée à Immolev. Fermez-la, puis rouvrez Immolev avec « Ouvrir Immolev ».");
   }
   $("coupure").hidden = true;
   const d = await r.json().catch(() => ({}));
@@ -507,8 +507,8 @@ function afficher(e) {
 
   $("version").textContent = e.version;
   $("c-maj").classList.toggle("cache", !e.maj);
-  $("p-compte").textContent = e.compte ? "Compte « " + e.compte + " » enregistré : l'agent est fourni par Optizien et les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »). Pour changer de compte, saisissez-en un autre."
-    : "Le compte du magasin donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Optizien.";
+  $("p-compte").textContent = e.compte ? "Compte « " + e.compte + " » enregistré : l'agent est fourni par Immolev et les nouvelles versions arrivent toutes seules (bandeau « Mettre à jour »). Pour changer de compte, saisissez-en un autre."
+    : "Le compte du gestionnaire donne accès à l'agent et à ses mises à jour : rien d'autre à configurer. Identifiant et mot de passe vous sont fournis par Immolev.";
   if (e.maj) $("maj-version").textContent = "(" + e.maj.version + ")";
   if (e.fiche) afficherFiche(e.fiche);
   fait(7, !e.regles.vide, e.regles.vide ? "À compléter" : "Enregistrées");
@@ -655,7 +655,7 @@ $("b-demarrer").onclick = () => { delete $("m6").dataset.local; action($("b-dema
 $("b-arreter").onclick = () => { $("m6").dataset.local = 1; action($("b-arreter"), "m6", () => api("/api/agent/arreter", {}), () => "Agent arrêté."); };
 $("c-demarrage").onchange = e => action(e.target, "m7", () => api("/api/demarrage", {actif: e.target.checked}),
   () => e.target.checked ? "L'agent démarrera avec le PC." : "Démarrage automatique désactivé.");
-$("b-bureau").onclick = () => action($("b-bureau"), "m7", () => api("/api/bureau", {}), () => "Raccourci « Optizien » créé sur le Bureau.");
+$("b-bureau").onclick = () => action($("b-bureau"), "m7", () => api("/api/bureau", {}), () => "Raccourci « Immolev » créé sur le Bureau.");
 $("d-journal").ontoggle = rafraichir;
 function finMaj(r) {
   document.body.innerHTML = `<main><section class="carte agent"><h2>Mise à jour installée (${esc(r.version)})</h2><p>Le panneau se rouvre dans quelques secondes dans une nouvelle fenêtre. Vous pouvez fermer celle-ci.</p></section></main>`;
@@ -670,9 +670,9 @@ $("i-maj").onchange = async ev => {
   try { finMaj(await api("/api/maj", {contenu: b64})); } catch (e) { msg("m7", e.message, "err"); }
 };
 $("b-quitter").onclick = async () => {
-  if (!confirm("Arrêter l'agent et fermer Optizien ?")) return;
+  if (!confirm("Arrêter l'agent et fermer Immolev ?")) return;
   try { await api("/api/quitter", {}); } catch (e) {}
-  document.body.innerHTML = '<main><section class="carte agent"><h2>Optizien est fermé</h2><p>L\'agent est arrêté. Vous pouvez remplacer le dossier, puis rouvrir « Ouvrir Optizien ».</p></section></main>';
+  document.body.innerHTML = '<main><section class="carte agent"><h2>Immolev est fermé</h2><p>L\'agent est arrêté. Vous pouvez remplacer le dossier, puis rouvrir « Ouvrir Immolev ».</p></section></main>';
 };
 
 let acces = [], siteEnCours = null, reglesTouchees = false;
@@ -778,7 +778,7 @@ creerDictee($("dictee-regles"), {msgId: "m7r", apres: texte => {
   z.scrollTop = z.scrollHeight;
   msg("m7r", "Ajouté à la fin. Relisez, puis Enregistrer les règles.", "ok");
 }});
-// Questionnaire du magasin (carte 8)
+// Questionnaire du gestionnaire (carte 8)
 let ficheTouchee = false;
 function afficherFiche(f) {
   const total = f.questions.length, faites = f.questions.filter(q => q.reponse).length;

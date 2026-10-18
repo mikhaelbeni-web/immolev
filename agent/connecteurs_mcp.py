@@ -3,7 +3,7 @@
 Chaque serveur déclaré dans `connecteurs.json` est lancé (ou joint par URL), ses outils sont
 proposés à Claude sous le nom `<serveur>__<outil>`. Un outil n'est en lecture libre que si le
 serveur le déclare en lecture seule (readOnlyHint) ou si la configuration le liste dans "lecture".
-Tout le reste (envoyer, supprimer, créer, modifier…) attend la confirmation de l'opticien.
+Tout le reste (envoyer, supprimer, créer, modifier…) attend la confirmation du gestionnaire.
 """
 from __future__ import annotations
 

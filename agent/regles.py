@@ -1,7 +1,7 @@
-"""Règles du magasin : ce que l'agent doit savoir du fonctionnement de la boutique pour poser moins de questions.
+"""Règles du gestionnaire : ce que l'agent doit savoir de sa façon de travailler pour poser moins de questions.
 
-Texte libre écrit par l'opticien dans le panneau (ou ajouté par « retiens : … » sur Telegram, après
-confirmation). Ajouté au prompt système à chaque demande. Jamais de donnée patient.
+Texte libre écrit par le gestionnaire dans le panneau (ou ajouté par « retiens : … » sur Telegram, après
+confirmation). Ajouté au prompt système à chaque demande. Jamais de donnée personnelle de tiers.
 """
 from __future__ import annotations
 
@@ -9,24 +9,23 @@ from datetime import date
 
 from .acces import dossier_donnees
 
-MODELE = """# Le magasin
-- Nom, adresse, horaires :
-- Logiciel principal : MyEasyOptic (seule base des clients).
+MODELE = """# Le gestionnaire
+- Fonction, employeur ou société :
+- Logiciels principaux : (copropriété, gestion locative, hôtel, comptabilité)
 
-# Mutuelles fréquentes → portail à utiliser
-- (ex.) Harmonie Mutuelle → Almerys
-- (ex.) Mutuelle Générale → Viamedis
+# Opérations et biens suivis
+- (ex.) Hôtel Le Parc : reporting hebdomadaire le lundi
+- (ex.) Résidence Les Pins : copropriété, AG en mai
 
-# Habitudes de saisie dans MyEasyOptic
-- (ex.) Toujours renseigner le prescripteur et le RPPS.
-- (ex.) Les dossiers sont créés au nom de l'assuré principal.
-
-# Fournisseurs et équipements
-- (ex.) Verres : fournisseur habituel …
-- (ex.) Offre 100 % Santé proposée systématiquement.
+# Habitudes de traitement
+- (ex.) Toute facture fournisseur est rattachée au bien et à l'opération avant d'être payée.
+- (ex.) Les appels de fonds sont vérifiés contre le budget voté.
 
 # Qui valide quoi
-- (ex.) Les devis au-dessus de 1 000 € sont validés par l'opticien gérant.
+- (ex.) Les paiements au-dessus de 5 000 € sont validés par moi seul.
+
+# Vie personnelle
+- (ex.) Les sujets d'impôts et de patrimoine se traitent seulement en message privé.
 
 # Façon de répondre
 - (ex.) Réponses courtes, sans formule de politesse.
@@ -54,4 +53,4 @@ def ajouter(regle: str) -> str:
     if "# Retenu sur Telegram" not in texte:
         texte += "\n\n# Retenu sur Telegram"
     ecrire(f"{texte}\n- {regle} ({date.today():%d/%m/%Y})")
-    return f"Retenu : « {regle} ». L'opticien peut la modifier dans le panneau, rubrique Règles du magasin."
+    return f"Retenu : « {regle} ». Le gestionnaire peut la modifier dans le panneau, rubrique Règles du gestionnaire."

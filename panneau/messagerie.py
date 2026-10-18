@@ -1,4 +1,4 @@
-"""Boîtes mail du magasin : plusieurs Gmail et plusieurs Outlook / Hotmail, ajoutées depuis le panneau.
+"""Boîtes mail du gestionnaire : plusieurs Gmail et plusieurs Outlook / Hotmail, ajoutées depuis le panneau.
 
 - Gmail : notre connecteur (connecteurs/gmail_mcp.py), un client OAuth Google importé une fois.
 - Outlook / Hotmail : @softeria/ms-365-mcp-server (Node.js), qui gère lui-même plusieurs comptes ;
@@ -102,7 +102,7 @@ class Messagerie:
         self._ecrire(d)
         try:
             from agent import coffre as keyring
-            keyring.delete_password("optizien", f"MAIL:{adresse}")
+            keyring.delete_password("immolev", f"MAIL:{adresse}")
         except Exception:
             pass
         self.apres_changement()
@@ -115,7 +115,7 @@ class Messagerie:
             raise ValueError("Ce fichier n'est pas un fichier JSON de Google.") from None
         if "installed" not in d:
             raise ValueError("Il faut un identifiant OAuth de type « Application de bureau » (le fichier contient « installed »).")
-        for dossier in (self.donnees, self.app):  # dans app/ : suit le dossier Optizien copié sur un autre PC
+        for dossier in (self.donnees, self.app):  # dans app/ : suit le dossier Immolev copié sur un autre PC
             try:
                 (dossier / "google-client.json").write_text(json.dumps(d), encoding="utf-8")
             except OSError:
@@ -186,7 +186,7 @@ class Messagerie:
         self._ecrire(d)
         try:
             from agent import coffre as keyring
-            keyring.delete_password("optizien", f"GMAIL_JETON:{adresse}")
+            keyring.delete_password("immolev", f"GMAIL_JETON:{adresse}")
         except Exception:
             pass
         self.apres_changement()

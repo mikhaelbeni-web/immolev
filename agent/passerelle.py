@@ -1,6 +1,6 @@
-"""Connexion de l'agent à Claude par la passerelle du site Optizien.
+"""Connexion de l'agent à Claude par la passerelle du site Immolev.
 
-Le magasin n'a pas de clé API : l'agent s'identifie avec le compte Optizien du magasin (coffre Windows) et le serveur
+Le gestionnaire n'a pas de clé API : l'agent s'identifie avec le compte Immolev du gestionnaire (coffre Windows) et le serveur
 ajoute la clé Anthropic, qu'il est seul à connaître. Le SDK Anthropic lit ANTHROPIC_BASE_URL et ANTHROPIC_API_KEY.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ import json
 import urllib.error
 import urllib.request
 
-URL = "https://optizien.vercel.app/api/ia"
+URL = "https://immolev.vercel.app/api/ia"
 
 
 def environnement(compte: dict, url: str = URL) -> dict[str, str]:
@@ -24,10 +24,10 @@ def ping(compte: dict, url: str = URL, timeout: int = 20) -> dict:
             rep = json.loads(r.read() or b"{}")
     except urllib.error.HTTPError as e:
         if e.code == 401:
-            return {"ok": False, "message": "Identifiant ou mot de passe refusé par le serveur Optizien."}
-        return {"ok": None, "message": f"Le serveur Optizien répond une erreur ({e.code})."}
+            return {"ok": False, "message": "Identifiant ou mot de passe refusé par le serveur Immolev."}
+        return {"ok": None, "message": f"Le serveur Immolev répond une erreur ({e.code})."}
     except (OSError, ValueError) as e:
-        return {"ok": None, "message": f"Serveur Optizien injoignable : {e}"}
+        return {"ok": None, "message": f"Serveur Immolev injoignable : {e}"}
     if not rep.get("cle"):
-        return {"ok": None, "message": "Compte accepté, mais le serveur Optizien n'a pas encore sa clé IA : prévenez Optizien."}
-    return {"ok": True, "message": "Connecté : l'agent est fourni par Optizien, rien d'autre à configurer."}
+        return {"ok": None, "message": "Compte accepté, mais le serveur Immolev n'a pas encore sa clé IA : prévenez Immolev."}
+    return {"ok": True, "message": "Connecté : l'agent est fourni par Immolev, rien d'autre à configurer."}

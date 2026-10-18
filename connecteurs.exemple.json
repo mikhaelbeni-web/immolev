@@ -11,7 +11,7 @@
   },
 
   "gmail": {
-    "_compte": "Connecteur Gmail d'Optizien (API Gmail officielle). Connexion une fois : python -m connecteurs.gmail_mcp --connexion (fichier gmail_client_secret.json requis).",
+    "_compte": "Connecteur Gmail d'Immolev (API Gmail officielle). Connexion une fois : python -m connecteurs.gmail_mcp --connexion (fichier gmail_client_secret.json requis).",
     "commande": "python",
     "args": ["-m", "connecteurs.gmail_mcp"]
   },

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from agent import coffre as keyring
 
-SERVICE = "optizien"
+SERVICE = "immolev"
 
 
 def cle_valide(cle):
@@ -56,15 +56,15 @@ for nom, invite, cache in (
                 continue
         keyring.set_password(SERVICE, nom, valeur)
         break
-print("\nSecrets enregistrés dans le coffre Windows (service « optizien »).")
+print("\nSecrets enregistrés dans le coffre Windows (service « immolev »).")
 
-# Messagerie : au choix de l'opticien
+# Messagerie : au choix du gestionnaire
 modele = json.loads(Path("connecteurs.exemple.json").read_text(encoding="utf-8"))
-choix = input("\nMessagerie du magasin : 1 = Gmail, 2 = Outlook / Hotmail, 3 = Microsoft 365 pro, Entrée = aucune : ").strip()
+choix = input("\nMessagerie du gestionnaire : 1 = Gmail, 2 = Outlook / Hotmail, 3 = Microsoft 365 pro, Entrée = aucune : ").strip()
 config = {}
 if choix == "1":
     config["gmail"] = modele["gmail"]
-    print("Connexion Gmail : Chrome va s'ouvrir, accepte l'accès à la boîte du magasin.")
+    print("Connexion Gmail : Chrome va s'ouvrir, accepte l'accès à la boîte du gestionnaire.")
     subprocess.run([sys.executable, "-m", "connecteurs.gmail_mcp", "--connexion"], check=False)
 elif choix in ("2", "3"):
     config["outlook"] = modele["outlook"]

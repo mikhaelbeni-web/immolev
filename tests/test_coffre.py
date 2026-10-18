@@ -11,18 +11,18 @@ def _faux(tmp_path, **kw):
 
 def test_repli_fichier_chiffre(tmp_path):
     c = _faux(tmp_path, utiliser_keyring=False)
-    c.set_password("optizien", "TELEGRAM_TOKEN", "123:abc")
-    assert c.get_password("optizien", "TELEGRAM_TOKEN") == "123:abc"
+    c.set_password("immolev", "TELEGRAM_TOKEN", "123:abc")
+    assert c.get_password("immolev", "TELEGRAM_TOKEN") == "123:abc"
     assert "123:abc" not in (tmp_path / "coffre.json").read_text()
-    c.delete_password("optizien", "TELEGRAM_TOKEN")
-    assert c.get_password("optizien", "TELEGRAM_TOKEN") is None
+    c.delete_password("immolev", "TELEGRAM_TOKEN")
+    assert c.get_password("immolev", "TELEGRAM_TOKEN") is None
 
 
 def test_module_keyring_absent(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "keyring", None)  # « No module named 'keyring' »
     c = _faux(tmp_path)
-    c.set_password("optizien", "x", "secret")
-    assert c.get_password("optizien", "x") == "secret"
+    c.set_password("immolev", "x", "secret")
+    assert c.get_password("immolev", "x") == "secret"
 
 
 def test_coffre_systeme_en_erreur(tmp_path, monkeypatch):
@@ -32,8 +32,8 @@ def test_coffre_systeme_en_erreur(tmp_path, monkeypatch):
         def delete_password(*a): raise RuntimeError("pas de coffre")
     monkeypatch.setitem(sys.modules, "keyring", Casse())
     c = _faux(tmp_path)
-    c.set_password("optizien", "x", "secret")
-    assert c.get_password("optizien", "x") == "secret"
+    c.set_password("immolev", "x", "secret")
+    assert c.get_password("immolev", "x") == "secret"
 
 
 def test_coffre_systeme_prioritaire(tmp_path, monkeypatch):
@@ -44,8 +44,8 @@ def test_coffre_systeme_prioritaire(tmp_path, monkeypatch):
         def delete_password(self, s, n): mem.pop((s, n), None)
     monkeypatch.setitem(sys.modules, "keyring", Ok())
     c = _faux(tmp_path)
-    c.set_password("optizien", "x", "v")
-    assert mem[("optizien", "x")] == "v" and not (tmp_path / "coffre.json").exists()
+    c.set_password("immolev", "x", "v")
+    assert mem[("immolev", "x")] == "v" and not (tmp_path / "coffre.json").exists()
 
 
 def test_panneau_enregistre_le_jeton_sans_keyring(tmp_path, monkeypatch):
