@@ -13,6 +13,7 @@ Les pages construites en cadres (iframes) sont lues aussi : leurs éléments ont
 """
 from __future__ import annotations
 
+import random
 import json
 import re
 from pathlib import Path
@@ -138,6 +139,7 @@ class Navigateur:
             self.page.wait_for_load_state("networkidle", timeout=10000)
         except Exception:
             pass
+        self.page.wait_for_timeout(random.randint(500, 1200))  # rythme naturel : évite les rafales qui déclenchent les captchas
 
     def carte(self) -> dict[str, Any]:
         self._cadres = list(self.page.frames)
