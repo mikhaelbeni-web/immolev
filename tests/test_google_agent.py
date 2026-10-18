@@ -42,3 +42,20 @@ def test_consigne_dit_si_google_est_connecte(tmp_path, monkeypatch):
     assert "aucun compte Google" in orchestrateur.google_agent() and "Compte Google de l'agent" in orchestrateur.google_agent()
     (tmp_path / "google-agent.json").write_text('{"fait": true}')
     assert "connecté à un compte Google" in orchestrateur.google_agent()
+
+
+def test_adresse_du_compte_google_lue_dans_le_profil_chrome(tmp_path, monkeypatch):
+    import json
+    e, _ = _etat(tmp_path, monkeypatch, False)
+    monkeypatch.setattr(pan.systeme, "profil_utilise", lambda p: False)
+    defaut = tmp_path / "chrome-agent" / "Default"
+    defaut.mkdir(parents=True)
+    liste = json.dumps(["gaia.l.a.r", [["gaia.l.a", 1, "Agent", "Agent.Immo@gmail.com", "x", 1, 1, 0]]])
+    (defaut / "Preferences").write_text(json.dumps({"gaia_cookie": {"last_list_accounts_data": liste}}), encoding="utf-8")
+    e.ouvrir_google_agent()
+    e.terminer_google_agent()
+    assert e.google_agent()["adresses"] == ["agent.immo@gmail.com"]
+
+
+def test_sans_profil_chrome_aucune_adresse(tmp_path):
+    assert pan.comptes_chrome(tmp_path / "absent") == []

@@ -145,6 +145,17 @@ def verifier_bot(jeton: str) -> dict:
 
 # ---------------------------------------------------------------- état local
 
+def comptes_chrome(profil: Path) -> list[str]:
+    """Adresses Google connectées dans le profil Chrome de l'agent (lues dans ses Preferences, sans rien envoyer)."""
+    try:
+        pref = json.loads((profil / "Default" / "Preferences").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    brut = [a.get("email", "") for a in pref.get("account_info", []) if isinstance(a, dict)]
+    brut += re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", str((pref.get("gaia_cookie") or {}).get("last_list_accounts_data", "")))
+    return list(dict.fromkeys(a.lower() for a in brut if "@" in a))
+
+
 class Etat:
     def __init__(self):
         DONNEES.mkdir(parents=True, exist_ok=True)
@@ -479,9 +490,12 @@ class Etat:
     # compte Google de l'agent --------------------------------------------
     def google_agent(self) -> dict:
         try:
-            return json.loads((DONNEES / "google-agent.json").read_text(encoding="utf-8"))
+            info = json.loads((DONNEES / "google-agent.json").read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return {}
+        if info.get("fait") and not info.get("ouvert") and "adresses" not in info:  # connexion faite avant l'affichage de l'adresse
+            info["adresses"] = comptes_chrome(DONNEES / "chrome-agent")
+        return info
 
     def ouvrir_google_agent(self, adresse: str = "") -> None:
         """Arrête l'agent le temps de la connexion (le profil Chrome ne sert qu'à une fenêtre), puis ouvre Google."""
@@ -502,7 +516,8 @@ class Etat:
         if systeme.profil_utilise(DONNEES / "chrome-agent"):
             raise ValueError("Fermez d'abord la fenêtre Chrome de connexion Google, puis recliquez sur « J'ai terminé ».")
         relancer = bool(self.google_agent().get("relancer"))
-        (DONNEES / "google-agent.json").write_text(json.dumps({"fait": True, "ouvert": False, "relancer": False}), encoding="utf-8")
+        (DONNEES / "google-agent.json").write_text(json.dumps({"fait": True, "ouvert": False, "relancer": False,
+            "adresses": comptes_chrome(DONNEES / "chrome-agent")}), encoding="utf-8")
         if relancer and not self.pret():
             self.demarrer_agent()
 

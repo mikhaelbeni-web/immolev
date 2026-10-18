@@ -355,6 +355,7 @@
         L'agent s'arrête le temps de la connexion et redémarre tout seul.</p>
       <button id="b-google">Connecter le Gmail de l'agent</button>
       <button id="b-google-fin" class="second cache">J'ai terminé</button>
+      <p id="p-google-compte"></p>
       <div class="msg" id="m-google"></div>
     </div>
   </section>
@@ -465,6 +466,9 @@ function afficher(e) {
   $("e-google").textContent = ga.ouvert ? "Connexion en cours…" : (ga.fait ? "Fait" : "À faire");
   $("e-google").style.color = ga.fait || ga.ouvert ? "" : "var(--orange)";
   $("b-google").textContent = ga.fait ? "Changer de compte Google" : "Connecter le Gmail de l'agent";
+  $("p-google-compte").innerHTML = ga.fait && !ga.ouvert ? ((ga.adresses || []).length
+    ? "Compte connecté : <b>" + ga.adresses.map(esc).join("</b>, <b>") + "</b>"
+    : "Compte connecté : adresse non lue par le panneau. Clique « Changer de compte Google » pour la voir dans Chrome.") : "";
   $("b-google").classList.toggle("cache", !!ga.ouvert);
   $("b-google-fin").classList.toggle("cache", !ga.ouvert);
   const c = e.composants;
