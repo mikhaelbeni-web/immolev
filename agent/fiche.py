@@ -30,6 +30,11 @@ QUESTIONS = [
     ("tarifs", "Commerce", "Offres et politique tarifaire (2e paire, remises, 100 % Santé)", ""),
     ("mails", "Communication", "Adresse mail du magasin et signature des mails", ""),
     ("ton", "Communication", "Comment l'agent doit-il répondre à l'équipe ?", "Court, tutoiement, sans formule de politesse"),
+    ("societe", "Gestion de la société", "Forme juridique, date de clôture de l'exercice et régime de TVA", "SARL, clôture 31/12, TVA mensuelle"),
+    ("comptable", "Gestion de la société", "Expert-comptable (cabinet, contact) et logiciel de comptabilité ou de paie", "Cabinet …, envoi des pièces le 5 du mois ; logiciel …"),
+    ("salaries", "Gestion de la société", "Salariés : nombre, contrats, qui fait la paie, convention collective", "3 salariés, paie par le cabinet, convention optique-lunetterie"),
+    ("charges", "Gestion de la société", "Charges principales et échéances (loyer, assurances, emprunts, URSSAF)", "Loyer le 1er, URSSAF le 15, emprunt le 5"),
+    ("confidentiel", "Gestion de la société", "Qui peut voir les données sensibles (salaires, comptes, trésorerie) ?", "Seulement Mikhael"),
     ("interdits", "Limites", "Ce que l'agent ne doit jamais faire", ""),
 ]
 IDS = {q[0] for q in QUESTIONS}
