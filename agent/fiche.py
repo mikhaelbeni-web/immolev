@@ -89,6 +89,23 @@ def retenir_procedure(nom: str, etapes: str) -> str:
     return f"Procédure « {nom} » retenue : je la suivrai la prochaine fois."
 
 
+def notes_sites() -> dict:
+    return _lire("notes-sites.json")
+
+
+def noter_site(site: str, note: str) -> str:
+    """Mémoire technique d'un site : méthode de connexion qui marche, erreur rencontrée, solution, étape humaine."""
+    site, note = " ".join(site.split())[:60], " ".join(note.split())[:300]
+    if not site or not note:
+        return "Site ou note vide : rien n'est noté."
+    d = notes_sites()
+    liste = [n for n in d.get(site, []) if n.split(" (")[0] != note]
+    liste.append(f"{note} ({date.today():%d/%m/%Y})")
+    d[site] = liste[-8:]
+    _ecrire("notes-sites.json", d)
+    return f"Noté pour {site}."
+
+
 def supprimer_procedure(nom: str) -> None:
     d = procedures()
     d.pop(nom, None)
@@ -108,6 +125,10 @@ def texte_prompt() -> str:
         parties.append("Questions encore sans réponse (identifiants) : " + ", ".join(manque) + ".\nSi l'une d'elles t'empêche "
                        "de bien faire une tâche, pose la question à l'équipe en une ligne, puis propose completer_fiche avec "
                        "la réponse. Ne pose pas plus d'une question de ce type par demande.")
+    ns = notes_sites()
+    if ns:
+        parties.append("# Notes techniques par site (méthodes qui marchent, erreurs déjà vues)\n" +
+                       "\n".join(f"- {site} : " + " | ".join(n) for site, n in ns.items()))
     p = procedures()
     if p:
         parties.append("# Procédures retenues dans ce magasin (suis-les en priorité)\n" +

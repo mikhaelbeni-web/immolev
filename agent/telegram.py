@@ -158,6 +158,10 @@ class Pont:
             "retenir_procedure", "Retient les étapes exactes d'une tâche réussie sur un site (écrans, champs, boutons), pour la "
             "refaire sans chercher. nom : ex. 'MyEasyOptic : créer une fiche client'. Aucune donnée de client.",
             {"nom": {"type": "string"}, "etapes": {"type": "string"}}, True, fiche.retenir_procedure)
+        outils["noter_site"] = Outil(
+            "noter_site", "Note une information technique sur un site pour la prochaine fois : méthode de connexion qui marche, "
+            "erreur déjà vue et sa solution, étape qui demande l'équipe (captcha, code SMS). Une ligne, aucun identifiant ni donnée de client.",
+            {"site": {"type": "string"}, "note": {"type": "string"}}, False, fiche.noter_site)
         if chat_id is not None:
             outils["ajouter_tache"] = Outil(
                 "ajouter_tache", "Met une tâche dans la file : elle sera traitée seule, après la demande en cours. "
