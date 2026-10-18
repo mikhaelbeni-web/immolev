@@ -317,6 +317,18 @@
     </div>
   </section>
 
+  <section class="carte" id="c-google">
+    <div class="titre"><h2>Compte Google de l'agent</h2><span class="etat" id="e-google"></span></div>
+    <div class="corps">
+      <p class="petit">Permet à l'agent de se connecter aux sites avec « Se connecter avec Google », en te demandant avant chaque fois.
+        Une fenêtre Chrome s'ouvre : connecte-toi avec le Gmail que l'agent doit utiliser, ferme la fenêtre, puis clique sur « J'ai terminé ».
+        L'agent s'arrête le temps de la connexion et redémarre tout seul.</p>
+      <button id="b-google">Connecter le Gmail de l'agent</button>
+      <button id="b-google-fin" class="second cache">J'ai terminé</button>
+      <div class="msg" id="m-google"></div>
+    </div>
+  </section>
+
   <section class="carte">
     <div class="titre"><span class="num" id="n7">7</span><h2>Règles du magasin</h2><span class="etat" id="e7"></span></div>
     <div class="corps">
@@ -423,6 +435,12 @@ function afficher(e) {
     $("t-couts").innerHTML = e.ia.couts.length ? "<tr><td colspan=2 class=petit style='text-align:left'>Dernières demandes (coût)</td></tr>" + e.ia.couts.map(c =>
       `<tr><td><span class="petit">${esc(c.date)}</span> ${esc(c.demande)}</td><td>${c.cout.toFixed(2).replace(".", ",")} €</td></tr>`).join("") : "";
   }
+  const ga = e.google_agent || {};
+  $("e-google").textContent = ga.ouvert ? "Connexion en cours…" : (ga.fait ? "Fait" : "À faire");
+  $("e-google").style.color = ga.fait || ga.ouvert ? "" : "var(--orange)";
+  $("b-google").textContent = ga.fait ? "Changer de compte Google" : "Connecter le Gmail de l'agent";
+  $("b-google").classList.toggle("cache", !!ga.ouvert);
+  $("b-google-fin").classList.toggle("cache", !ga.ouvert);
   const c = e.composants;
   fait(1, c.ok, c.ok ? "Installés" : (c.en_cours ? "Installation…" : "À installer"));
   $("b-installer").classList.toggle("cache", c.ok || c.en_cours);
@@ -576,6 +594,10 @@ async function rafraichir() {
   }
 }
 
+$("b-google").onclick = () => action($("b-google"), "m-google", () => api("/api/google-agent/ouvrir", {}),
+  () => "Chrome s'ouvre : connectez-vous à Google, fermez la fenêtre, puis cliquez sur « J'ai terminé ».");
+$("b-google-fin").onclick = () => action($("b-google-fin"), "m-google", () => api("/api/google-agent/terminer", {}),
+  () => "Compte Google enregistré pour l'agent.");
 $("b-installer").onclick = () => action($("b-installer"), "m1", () => api("/api/installer", {}), () => "Installation lancée…");
 $("b-bot").onclick = () => { $("m3").dataset.local = 1; action($("b-bot"), "m3", () => api("/api/bot", {valeur: $("i-bot").value}),
   () => { $("i-bot").value = ""; delete $("m3").dataset.local; return "Bot enregistré."; }); };

@@ -476,6 +476,32 @@ class Etat:
             info["arrete"] = True
             f.write_text(json.dumps(info))
 
+    # compte Google de l'agent --------------------------------------------
+    def google_agent(self) -> dict:
+        try:
+            return json.loads((DONNEES / "google-agent.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    def ouvrir_google_agent(self) -> None:
+        """Arrête l'agent le temps de la connexion (le profil Chrome ne sert qu'à une fenêtre), puis ouvre Google."""
+        relancer = self.agent()["en_marche"] or bool(self.google_agent().get("relancer"))
+        if self.agent()["en_marche"]:
+            self.arreter_agent()
+            time.sleep(2)
+        systeme.ouvrir_chrome_profil("https://accounts.google.com/", DONNEES / "chrome-agent")
+        DONNEES.mkdir(parents=True, exist_ok=True)
+        (DONNEES / "google-agent.json").write_text(json.dumps(
+            {"fait": bool(self.google_agent().get("fait")), "ouvert": True, "relancer": relancer}), encoding="utf-8")
+
+    def terminer_google_agent(self) -> None:
+        if systeme.profil_utilise(DONNEES / "chrome-agent"):
+            raise ValueError("Fermez d'abord la fenêtre Chrome de connexion Google, puis recliquez sur « J'ai terminé ».")
+        relancer = bool(self.google_agent().get("relancer"))
+        (DONNEES / "google-agent.json").write_text(json.dumps({"fait": True, "ouvert": False, "relancer": False}), encoding="utf-8")
+        if relancer and not self.pret():
+            self.demarrer_agent()
+
     # options -----------------------------------------------------------
     def lien_demarrage(self) -> Path:
         return systeme.dossier_special("Startup") / "Optizien agent.lnk"
@@ -536,6 +562,7 @@ class Etat:
             "compte": (self.compte() or {}).get("identifiant"),
             "maj": self.maj_disponible(),
             "agent": self.agent(),
+            "google_agent": self.google_agent(),
             "options": self.options(),
             "visage": {"choix": visage.lire(DONNEES), "liste": visage.liste(),
                        "perso": (DONNEES / "visage-perso.jpg").exists()},
@@ -605,6 +632,10 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
         def _action(self, chemin: str, c: dict):
             if chemin == "/api/installer":
                 etat.installer()
+            elif chemin == "/api/google-agent/ouvrir":
+                etat.ouvrir_google_agent()
+            elif chemin == "/api/google-agent/terminer":
+                etat.terminer_google_agent()
             elif chemin == "/api/bot":
                 jeton_bot = propre(c.get("valeur"))
                 verif = verifier_bot(jeton_bot)

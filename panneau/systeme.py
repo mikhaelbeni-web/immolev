@@ -77,6 +77,28 @@ def chrome() -> str | None:
     return None
 
 
+def ouvrir_chrome_profil(url: str, profil: Path) -> None:
+    """Chrome ordinaire (sans pilotage, donc Google accepte la connexion) sur le profil dédié à l'agent."""
+    navigateur = chrome()
+    if not navigateur:
+        raise RuntimeError("Google Chrome n'est pas installé sur ce PC.")
+    profil.mkdir(parents=True, exist_ok=True)
+    subprocess.Popen([navigateur, f"--user-data-dir={profil}", "--no-first-run", "--no-default-browser-check", url],
+                     creationflags=SANS_FENETRE)
+
+
+def profil_utilise(profil: Path) -> bool:
+    """Vrai si une fenêtre Chrome utilise encore ce profil (Chrome garde son fichier « lockfile » verrouillé sous Windows)."""
+    verrou = profil / "lockfile"
+    if not WINDOWS or not verrou.exists():
+        return False
+    try:
+        with open(verrou, "ab"):
+            return False
+    except OSError:
+        return True
+
+
 def edge() -> str | None:
     for base in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles")):
         if base and (p := Path(base) / "Microsoft" / "Edge" / "Application" / "msedge.exe").exists():
