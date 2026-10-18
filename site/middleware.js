@@ -9,7 +9,9 @@ const DUREE = 30 * 24 * 3600;  // 30 jours
 const enc = new TextEncoder();
 const hex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
 const empreinte = async (t) => hex(await crypto.subtle.digest('SHA-256', enc.encode(t)));
-const comptes = () => Object.fromEntries((process.env.IMMOLEV_COMPTES || '').split(';').filter(Boolean).map((c) => c.split(':')));
+// Tolère espaces, retours à la ligne et guillemets collés autour de la valeur dans Vercel.
+const comptes = () => Object.fromEntries((process.env.IMMOLEV_COMPTES || '').replace(/["'\s]/g, '').split(';').filter(Boolean)
+  .map((c) => { const i = c.indexOf(':'); return [c.slice(0, i).toLowerCase(), c.slice(i + 1).toLowerCase()]; }));
 const suivant = () => new Response(null, { headers: { 'x-middleware-next': '1' } });
 const vers = (url, entetes = {}) => new Response(null, { status: 303, headers: { Location: url, 'Cache-Control': 'no-store', ...entetes } });
 
@@ -21,6 +23,7 @@ function egal(a, b) {
 }
 
 async function verifier(id, mdp) {
+  id = String(id || '').trim().toLowerCase();
   const h = comptes()[id];
   return !!(id && h && egal(h, await empreinte(`${id}:${mdp}`)));
 }
