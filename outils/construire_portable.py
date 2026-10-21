@@ -56,6 +56,8 @@ def construire(archive_python: Path, sortie: Path) -> None:
         if not roues:
             raise SystemExit("outils/roues est vide : le coffre des secrets ne serait pas embarqué.")
         for roue in roues:
+            if roue.name.startswith("truststore-"):
+                continue
             with zipfile.ZipFile(roue) as z:
                 z.extractall(paquets)
         app = systeme / "app"
@@ -66,6 +68,10 @@ def construire(archive_python: Path, sortie: Path) -> None:
             else:
                 app.mkdir(exist_ok=True)
                 shutil.copy2(src, app / nom)
+        # truststore à côté du code (et non dans le Python embarqué) : les mises à jour en ligne le livrent aussi
+        for roue in (RACINE / "outils" / "roues").glob("truststore-*.whl"):
+            with zipfile.ZipFile(roue) as z:
+                z.extractall(app, [n for n in z.namelist() if n.startswith("truststore/")])
         # numéro simple (1, 2, 3…) : +1 à chaque construction, gardé dans outils/NUMERO
         numero_f = Path(__file__).with_name("NUMERO")
         numero = int(numero_f.read_text().strip()) + 1 if numero_f.exists() else 1
