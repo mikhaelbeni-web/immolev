@@ -7,6 +7,8 @@ Le panneau écrit connecteurs.json dans le dossier de données ; l'agent le lit 
 """
 from __future__ import annotations
 
+import hashlib
+import io
 import json
 import os
 import re
@@ -14,7 +16,9 @@ import shutil
 import subprocess
 import sys
 import threading
+import urllib.request
 import webbrowser
+import zipfile
 from pathlib import Path
 
 from . import systeme
@@ -22,6 +26,35 @@ from . import systeme
 PAQUET_MS = "@softeria/ms-365-mcp-server@0.168.0"
 LECTURE_MS = ["list-accounts", "list-mail-messages", "list-mail-folders", "list-mail-folder-messages", "get-mail-message",
               "list-mail-attachments", "get-mail-attachment-content", "list-calendar-events", "get-calendar-event"]
+
+
+NODE = "https://nodejs.org/dist"
+
+
+def _lire_url(url: str, timeout: int = 300) -> bytes:
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Immolev"}), timeout=timeout) as r:
+        return r.read()
+
+
+def installer_node_portable(dossier: Path, lire=_lire_url) -> Path:
+    """Node.js LTS officiel (zip Windows 64 bits) vérifié par SHASUMS256.txt de nodejs.org, extrait dans dossier."""
+    version = next(v["version"] for v in json.loads(lire(f"{NODE}/index.json", 60)) if v.get("lts"))
+    nom = f"node-{version}-win-x64"
+    sommes = lire(f"{NODE}/{version}/SHASUMS256.txt", 60).decode()
+    attendu = next((l.split()[0] for l in sommes.splitlines() if l.strip().endswith(f"{nom}.zip")), None)
+    if not attendu:
+        raise RuntimeError(f"empreinte de {nom}.zip absente de nodejs.org")
+    contenu = lire(f"{NODE}/{version}/{nom}.zip")
+    if hashlib.sha256(contenu).hexdigest() != attendu:
+        raise RuntimeError("le fichier Node.js téléchargé ne correspond pas à son empreinte officielle")
+    temp = dossier.with_name(dossier.name + "-temp")
+    shutil.rmtree(temp, ignore_errors=True)
+    with zipfile.ZipFile(io.BytesIO(contenu)) as z:
+        z.extractall(temp)
+    shutil.rmtree(dossier, ignore_errors=True)
+    (temp / nom).replace(dossier)
+    shutil.rmtree(temp, ignore_errors=True)
+    return dossier
 
 
 class Messagerie:
@@ -55,10 +88,17 @@ class Messagerie:
         trouve = shutil.which("npx")
         if trouve:
             return trouve
-        for base in (os.environ.get("ProgramFiles"), os.environ.get("LOCALAPPDATA")):
+        for base in (os.environ.get("ProgramFiles"), os.environ.get("LOCALAPPDATA"), str(self.donnees)):
             if base and (p := Path(base) / "nodejs" / "npx.cmd").exists():
                 return str(p)
         return None
+
+    def _env_node(self) -> dict:
+        """PATH avec le dossier de npx en tête : le Node.js portable d'Immolev n'est pas dans le PATH de Windows."""
+        env = dict(os.environ)
+        if (npx := self.npx()) and os.path.isabs(npx):
+            env["PATH"] = os.path.dirname(npx) + os.pathsep + env.get("PATH", "")
+        return env
 
     def vue(self) -> dict:
         d = self._lire()
@@ -197,7 +237,8 @@ class Messagerie:
         if not npx:
             raise ValueError("Installez d'abord le composant Microsoft.")
         r = subprocess.run([npx, "-y", PAQUET_MS, *args], capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=timeout, creationflags=systeme.SANS_FENETRE, cwd=self.donnees)
+                           errors="replace", timeout=timeout, creationflags=systeme.SANS_FENETRE, cwd=self.donnees,
+                           env=self._env_node())
         for ligne in reversed(r.stdout.splitlines()):
             if ligne.strip().startswith("{"):
                 return json.loads(ligne)
@@ -220,11 +261,14 @@ class Messagerie:
 
         def tache():
             try:
-                r = subprocess.run(["winget", "install", "-e", "--id", "OpenJS.NodeJS.LTS", "--silent",
+                if shutil.which("winget"):
+                    subprocess.run(["winget", "install", "-e", "--id", "OpenJS.NodeJS.LTS", "--silent",
                                     "--accept-package-agreements", "--accept-source-agreements"],
                                    capture_output=True, text=True, errors="replace", creationflags=systeme.SANS_FENETRE, timeout=900)
+                if not self.npx():  # pas de winget (Windows sans « App Installer ») ou échec : Node.js portable, sans droits admin
+                    installer_node_portable(self.donnees / "nodejs")
                 if not self.npx():
-                    raise RuntimeError((r.stdout + r.stderr).strip()[-300:] or "Node.js introuvable après installation")
+                    raise RuntimeError("Node.js introuvable après installation")
             except Exception as e:  # noqa: BLE001
                 self.node_installation["erreur"] = f"Installation de Node.js impossible : {e}. Installez-le depuis nodejs.org."
             finally:
@@ -243,7 +287,8 @@ class Messagerie:
     def _ajouter_ms(self, npx: str) -> None:
         try:
             p = subprocess.Popen([npx, "-y", PAQUET_MS, "--login"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                 text=True, encoding="utf-8", errors="replace", creationflags=systeme.SANS_FENETRE, cwd=self.donnees)
+                                 text=True, encoding="utf-8", errors="replace", creationflags=systeme.SANS_FENETRE, cwd=self.donnees,
+                                 env=self._env_node())
             sortie = []
             for ligne in p.stdout:
                 sortie.append(ligne)

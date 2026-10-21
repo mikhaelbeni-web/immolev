@@ -76,7 +76,10 @@ class ConnecteursMCP:
                     lecture, ecriture = flux[0], flux[1]
                 else:
                     commande = sys.executable if conf["commande"] in ("python", "python3") else conf["commande"]  # même Python que l'agent
-                    params = StdioServerParameters(command=commande, args=conf.get("args", []), env={**os.environ, **conf.get("env", {})})
+                    env = {**os.environ, **conf.get("env", {})}
+                    if os.path.isabs(commande):  # Node.js portable d'Immolev : node.exe doit être trouvé à côté de npx
+                        env["PATH"] = os.path.dirname(commande) + os.pathsep + env.get("PATH", "")
+                    params = StdioServerParameters(command=commande, args=conf.get("args", []), env=env)
                     lecture, ecriture = await pile.enter_async_context(stdio_client(params))
                 session = await pile.enter_async_context(ClientSession(lecture, ecriture))
                 await session.initialize()
