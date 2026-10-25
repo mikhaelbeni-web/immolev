@@ -6,6 +6,7 @@ import os
 import shutil
 import signal
 import subprocess
+import time
 import sys
 import webbrowser
 from pathlib import Path
@@ -83,8 +84,9 @@ def ouvrir_chrome_profil(url: str, profil: Path) -> None:
     if not navigateur:
         raise RuntimeError("Google Chrome n'est pas installé sur ce PC.")
     profil.mkdir(parents=True, exist_ok=True)
-    subprocess.Popen([navigateur, f"--user-data-dir={profil}", "--no-first-run", "--no-default-browser-check", url],
-                     creationflags=SANS_FENETRE)
+    # --disable-background-mode : fermer la fenêtre ferme vraiment Chrome (sinon il reste en arrière-plan et garde le profil)
+    subprocess.Popen([navigateur, f"--user-data-dir={profil}", "--no-first-run", "--no-default-browser-check",
+                      "--disable-background-mode", url], creationflags=SANS_FENETRE)
 
 
 def profil_utilise(profil: Path) -> bool:
@@ -97,6 +99,29 @@ def profil_utilise(profil: Path) -> bool:
             return False
     except OSError:
         return True
+
+
+def fermer_chrome_profil(profil: Path, attente: float = 8.0) -> bool:
+    """Ferme les Chrome restés ouverts sur ce profil : d'abord poliment (Chrome enregistre ses cookies), puis de force.
+    Vrai si le profil est libre à la fin."""
+    if not profil_utilise(profil):
+        return True
+    if WINDOWS:
+        motif = _ps(f"*{profil}*")
+        lister = f"(Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" | Where-Object {{ $_.CommandLine -like {motif} }}).ProcessId"
+        for force in (False, True):
+            try:
+                pids = [p for p in _powershell(lister).split() if p.isdigit()]
+            except Exception:  # noqa: BLE001
+                pids = []
+            for pid in pids:
+                subprocess.run(["taskkill", "/PID", pid, "/T", *(["/F"] if force else [])], capture_output=True, creationflags=SANS_FENETRE)
+            fin = time.time() + attente
+            while time.time() < fin:
+                if not profil_utilise(profil):
+                    return True
+                time.sleep(0.5)
+    return not profil_utilise(profil)
 
 
 def edge() -> str | None:

@@ -31,7 +31,7 @@ def test_terminer_refuse_tant_que_la_fenetre_chrome_est_ouverte(tmp_path, monkey
     e, journal = _etat(tmp_path, monkeypatch, False)
     e.ouvrir_google_agent()
     monkeypatch.setattr(pan.systeme, "profil_utilise", lambda p: True)
-    with pytest.raises(ValueError, match="Fermez d'abord"):
+    with pytest.raises(ValueError, match="pas pu être fermé"):
         e.terminer_google_agent()
     assert "demarrage" not in journal and not e.google_agent()["fait"]
 
@@ -65,3 +65,17 @@ def test_se_connecter_a_un_site_ouvre_sa_page_de_connexion(tmp_path, monkeypatch
     e, journal = _etat(tmp_path, monkeypatch, False)
     e.ouvrir_google_agent("moi@gmail.com", "https://www.rentila.com/login")
     assert journal == [("chrome", "https://www.rentila.com/login", "chrome-agent")]
+
+
+def test_deconnexion_ouvre_la_page_de_sortie_google(tmp_path, monkeypatch):
+    e, journal = _etat(tmp_path, monkeypatch, False)
+    e.ouvrir_google_agent("", "deconnexion")
+    assert journal == [("chrome", "https://accounts.google.com/Logout", "chrome-agent")]
+
+
+def test_fermer_chrome_profil_libre_ou_non(tmp_path, monkeypatch):
+    monkeypatch.setattr(pan.systeme, "profil_utilise", lambda p: False)
+    assert pan.systeme.fermer_chrome_profil(tmp_path) is True
+    monkeypatch.setattr(pan.systeme, "profil_utilise", lambda p: True)
+    monkeypatch.setattr(pan.systeme, "WINDOWS", False)
+    assert pan.systeme.fermer_chrome_profil(tmp_path) is False

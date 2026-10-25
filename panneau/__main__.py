@@ -328,6 +328,7 @@ class Etat:
             return
         if (manque := self.pret()):
             raise ValueError("Il manque : " + ", ".join(manque) + ".")
+        systeme.fermer_chrome_profil(DONNEES / "chrome-agent")  # un Chrome resté ouvert sur le profil empêche l'agent de démarrer
         env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8",
                    CHROME_PROFIL=str(DONNEES / "chrome-agent"))
         if (DONNEES / "connecteurs.json").exists():
@@ -507,6 +508,8 @@ class Etat:
             time.sleep(2)
         url = "https://accounts.google.com/"
         site = site.strip()
+        if site == "deconnexion":  # déconnecte tous les comptes Google du Chrome de l'agent
+            site, url = "", "https://accounts.google.com/Logout"
         if site and "://" not in site:
             site = "https://" + site
         if site.startswith("https://"):  # page de connexion du site : on s'y connecte soi-même (Google ou mot de passe)
@@ -520,8 +523,9 @@ class Etat:
             {"fait": bool(self.google_agent().get("fait")), "ouvert": True, "relancer": relancer}), encoding="utf-8")
 
     def terminer_google_agent(self) -> None:
-        if systeme.profil_utilise(DONNEES / "chrome-agent"):
-            raise ValueError("Fermez d'abord la fenêtre Chrome de connexion Google, puis recliquez sur « J'ai terminé ».")
+        if not systeme.fermer_chrome_profil(DONNEES / "chrome-agent"):
+            raise ValueError("Chrome n'a pas pu être fermé : fermez toutes les fenêtres Chrome de l'agent "
+                             "(ou redémarrez le PC), puis recliquez sur « J'ai terminé ».")
         relancer = bool(self.google_agent().get("relancer"))
         (DONNEES / "google-agent.json").write_text(json.dumps({"fait": True, "ouvert": False, "relancer": False,
             "adresses": comptes_chrome(DONNEES / "chrome-agent")}), encoding="utf-8")

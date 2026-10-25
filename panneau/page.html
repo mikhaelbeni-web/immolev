@@ -184,7 +184,9 @@
     <button class="grand" id="b-demarrer">Démarrer l'agent</button>
     <button class="grand danger cache" id="b-arreter">Arrêter l'agent</button>
     <div class="msg" id="m6"></div>
-    <details id="d-journal"><summary>Journal de l'agent</summary><pre id="journal">…</pre></details>
+    <details id="d-journal"><summary>Journal de l'agent</summary>
+      <div class="ligne" style="margin:8px 0"><button class="second" id="b-copier-journal">Copier le journal</button></div>
+      <pre id="journal" style="user-select:text">…</pre></details>
   </section>
   <section class="carte">
     <div class="titre"><h2>Visage de l'agent</h2><span class="etat" id="e-visage"></span></div>
@@ -355,6 +357,7 @@
         L'agent s'arrête le temps de la connexion et redémarre tout seul.</p>
       <button id="b-google">Connecter le Gmail de l'agent</button>
       <button id="b-google-fin" class="second cache">J'ai terminé</button>
+      <button id="b-google-sortir" class="second">Déconnecter Google</button>
       <p id="p-google-compte"></p>
       <div class="msg" id="m-google"></div>
     </div>
@@ -486,6 +489,7 @@ function afficher(e) {
     : "Compte connecté : adresse non lue par le panneau. Clique « Changer de compte Google » pour la voir dans Chrome.") : "";
   $("b-google").classList.toggle("cache", !!ga.ouvert);
   $("b-google-fin").classList.toggle("cache", !ga.ouvert);
+  $("b-google-sortir").classList.toggle("cache", !ga.fait || !!ga.ouvert);
   const c = e.composants;
   fait(1, c.ok, c.ok ? "Installés" : (c.en_cours ? "Installation…" : "À installer"));
   $("b-installer").classList.toggle("cache", c.ok || c.en_cours);
@@ -639,12 +643,25 @@ $("b-visage").onclick = () => {
 async function rafraichir() {
   try { afficher(await api("/api/etat")); } catch (e) {}
   if ($("d-journal").open) {
-    try { const j = await api("/api/journal"); $("journal").textContent = j.lignes.join("\n") || "(vide)"; } catch (e) {}
+    try {
+      const j = await api("/api/journal"), texte = j.lignes.join("\n") || "(vide)", sel = window.getSelection();
+      // pas de remplacement pendant une sélection : sinon Ctrl+C ne copie rien
+      const selectionDansJournal = sel && !sel.isCollapsed && $("journal").contains(sel.anchorNode);
+      if (!selectionDansJournal && $("journal").textContent !== texte) $("journal").textContent = texte;
+    } catch (e) {}
   }
 }
 
+$("b-copier-journal").onclick = async () => {
+  const texte = $("journal").textContent;
+  try { await navigator.clipboard.writeText(texte); }
+  catch (e) { const t = document.createElement("textarea"); t.value = texte; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  $("b-copier-journal").textContent = "Copié ✓"; setTimeout(() => $("b-copier-journal").textContent = "Copier le journal", 2000);
+};
+$("b-google-sortir").onclick = () => action($("b-google-sortir"), "m-google", () => api("/api/google-agent/ouvrir", {site: "deconnexion"}),
+  () => "Chrome s'ouvre sur la déconnexion Google : attendez la page de connexion, puis cliquez sur « J'ai terminé ». Ensuite « Connecter le Gmail de l'agent » pour choisir un autre compte.");
 $("b-google").onclick = () => action($("b-google"), "m-google", () => api("/api/google-agent/ouvrir", {}),
-  () => "Chrome s'ouvre : connectez-vous à Google, fermez la fenêtre, puis cliquez sur « J'ai terminé ».");
+  () => "Chrome s'ouvre : connectez-vous à Google, puis cliquez sur « J'ai terminé » (Immolev ferme Chrome lui-même).");
 $("b-google-fin").onclick = () => action($("b-google-fin"), "m-google", () => api("/api/google-agent/terminer", {}),
   () => "Compte Google enregistré pour l'agent.");
 $("b-installer").onclick = () => action($("b-installer"), "m1", () => api("/api/installer", {}), () => "Installation lancée…");
