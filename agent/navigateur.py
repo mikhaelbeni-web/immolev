@@ -13,9 +13,12 @@ Les pages construites en cadres (iframes) sont lues aussi : leurs éléments ont
 """
 from __future__ import annotations
 
-import random
+import functools
 import json
+import logging
+import random
 import re
+import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -114,13 +117,48 @@ class Navigateur:
             options["chromium_sandbox"] = True  # Playwright ajoute --no-sandbox par défaut
         contexte = pw.chromium.launch_persistent_context(str(profil), **options)
         page = contexte.pages[0] if contexte.pages else contexte.new_page()
-        return cls(page, contexte, pw)
+        nav = cls(page, contexte, pw)
+        nav._lancement = (profil, executable, visible)
+        logging.info("Chrome de l'agent lancé (profil %s)", profil)
+        return nav
 
     def fermer(self) -> None:
-        if self.contexte:
-            self.contexte.close()
-        if self._pw:
-            self._pw.stop()
+        for arret in (lambda: self.contexte and self.contexte.close(), lambda: self._pw and self._pw.stop()):
+            try:
+                arret()
+            except Exception:  # noqa: BLE001  déjà fermé
+                pass
+
+    def relancer(self) -> None:
+        """Chrome a été fermé (fenêtre fermée à la main, plantage) : on le rouvre sur le même profil."""
+        lancement = getattr(self, "_lancement", None)
+        if not lancement:
+            raise RuntimeError("Chrome de l'agent fermé et impossible à relancer.")
+        self.fermer()
+        derniere = None
+        for essai in range(3):  # le profil peut rester verrouillé quelques secondes après la fermeture
+            try:
+                neuf = Navigateur.lancer(*lancement)
+                self.page, self.contexte, self._pw = neuf.page, neuf.contexte, neuf._pw
+                logging.warning("Chrome de l'agent relancé après fermeture")
+                return
+            except Exception as e:  # noqa: BLE001
+                derniere = e
+                logging.warning("relance de Chrome impossible (essai %d) : %s", essai + 1, e)
+                time.sleep(3)
+        raise RuntimeError(f"Chrome de l'agent fermé et relance impossible : {derniere}")
+
+    def assurer_page(self) -> None:
+        """Page fermée mais Chrome ouvert : on reprend un onglet ; Chrome fermé : on le relance."""
+        try:
+            if not self.page.is_closed():
+                return
+            if self.contexte:
+                self.page = self.contexte.pages[0] if self.contexte.pages else self.contexte.new_page()
+                return
+        except Exception:  # noqa: BLE001
+            pass
+        self.relancer()
 
     def _element(self, ref: str):
         cadre = self.page.main_frame
@@ -309,6 +347,25 @@ class Navigateur:
         return f"Écran « {nom} » relevé : {len(structure['elements'])} éléments, sans aucune valeur."
 
 
+FERME = ("has been closed", "Target closed", "Browser closed", "browser has disconnected", "Connection closed")
+
+
+def _resistant(nav: Navigateur, fonction):
+    """Rouvre Chrome s'il a été fermé, puis réessaie une fois."""
+    @functools.wraps(fonction)
+    def appel(*args, **kwargs):
+        nav.assurer_page()
+        try:
+            return fonction(*args, **kwargs)
+        except Exception as e:
+            if not any(m.lower() in str(e).lower() for m in FERME):
+                raise
+            logging.warning("%s : Chrome fermé pendant l'action (%s), relance", fonction.__name__, str(e).splitlines()[0])
+            nav.relancer()
+            return fonction(*args, **kwargs)
+    return appel
+
+
 def outils_navigateur(nav: Navigateur) -> dict[str, Outil]:
     ref = {"ref": {"type": "string", "description": "Numéro #ref lu par lire_page"}}
     outils = [
@@ -329,4 +386,6 @@ def outils_navigateur(nav: Navigateur) -> dict[str, Outil]:
         Outil("relever_ecran", "Mémorise la structure de l'écran actuel sous un nom (ex. 'copro_fiche_lot') pour en faire une procédure. Aucune valeur n'est enregistrée.",
               {"nom": {"type": "string"}}, False, nav.relever_ecran),
     ]
+    for o in outils:
+        o.executer = _resistant(nav, o.executer)
     return {o.nom: o for o in outils}

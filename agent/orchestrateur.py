@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -36,7 +37,9 @@ def _appeler(client: Any, **kwargs: Any) -> Any:
             return client.beta.messages.create(**kwargs)
         except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
             if attente is None or getattr(e, "status_code", 0) not in (429, 500, 503, 529):
+                logging.error("Claude : erreur %s, abandon (%s)", getattr(e, "status_code", "?"), e)
                 raise
+            logging.warning("Claude : erreur %s (surcharge ou débit), nouvel essai dans %d s", getattr(e, "status_code", "?"), attente)
             time.sleep(attente)
 # Les vieilles lectures de page sont retirées de l'historique quand il grossit (le modèle garde ses appels).
 CONTEXTE = {"edits": [{
@@ -238,6 +241,11 @@ def systeme() -> str:
     return texte + "\n\nRègles du gestionnaire, écrites par lui (elles priment sur tes habitudes ; les lignes « (ex.) » sont des exemples à ignorer) :\n" + regles
 
 
+def _court(texte: str, n: int) -> str:
+    texte = " ".join(str(texte).split())
+    return texte if len(texte) <= n else texte[:n] + f"… (+{len(texte) - n} caractères)"
+
+
 def traiter(demande: str, outils: dict[str, Outil], client: anthropic.Anthropic | None = None) -> Resultat:
     client = client or anthropic.Anthropic(max_retries=4)
     reg = reglages()
@@ -254,7 +262,8 @@ def traiter(demande: str, outils: dict[str, Outil], client: anthropic.Anthropic 
         parametres["betas"] = parametres["betas"] + ["server-side-fallback-2026-07-01"]
         parametres["fallbacks"] = "default"
     depense = 0.0
-    for _ in range(MAX_TOURS):
+    logging.info("DEMANDE (modèle %s) : %s", modele, _court(demande, 1500))
+    for tour in range(MAX_TOURS):
         try:
             response = _appeler(client, **parametres, messages=messages)
         except anthropic.BadRequestError:
@@ -267,15 +276,18 @@ def traiter(demande: str, outils: dict[str, Outil], client: anthropic.Anthropic 
         depense += cout(getattr(response, "model", None) or modele, getattr(response, "usage", None))
         journal_cout(demande, depense)
         if response.stop_reason == "refusal":
+            logging.warning("Claude a refusé la demande")
             return Resultat("Demande refusée par le modèle.", en_attente)
         if response.stop_reason != "tool_use":
             texte = "\n".join(b.text for b in response.content if b.type == "text")
+            logging.info("RÉPONSE après %d étape(s), %.3f € : %s", tour + 1, depense, _court(texte, 2000))
             return Resultat(texte, en_attente)
         messages.append({"role": "assistant", "content": response.content})
         resultats = []
         for bloc in (b for b in response.content if b.type == "tool_use"):
             outil = outils.get(bloc.name)
             erreur = False
+            logging.info("OUTIL %s %s", bloc.name, _court(json.dumps(bloc.input, ensure_ascii=False), 500))
             if outil is None:
                 contenu, erreur = f"Outil inconnu : {bloc.name}", True
             elif outil.ecriture:
@@ -289,6 +301,11 @@ def traiter(demande: str, outils: dict[str, Outil], client: anthropic.Anthropic 
                     contenu, erreur = str(e), True
                 except Exception as e:  # page changée, site absent du coffre… : le modèle s'adapte
                     contenu, erreur = f"{type(e).__name__} : {e}"[:2000], True
+                    logging.exception("OUTIL %s : échec", bloc.name)
+            if erreur:
+                logging.warning("  → erreur : %s", _court(str(contenu), 800))
+            else:
+                logging.info("  → %s", _court(str(contenu), 300))
             resultats.append({"type": "tool_result", "tool_use_id": bloc.id, "content": contenu, "is_error": erreur})
         messages.append({"role": "user", "content": resultats})
         if depense >= reg["plafond"]:

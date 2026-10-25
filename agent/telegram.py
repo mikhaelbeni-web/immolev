@@ -274,6 +274,8 @@ class Pont:
         del ctx.echanges[:-3]
         self._garder_echanges(chat_id, ctx.echanges)
         self._envoyer(chat_id, resultat.texte or "Fait.")
+        for a in resultat.en_attente:
+            logging.info("EN ATTENTE de confirmation : %s %s", a.outil, json.dumps(a.parametres, ensure_ascii=False)[:300])
         for action in resultat.en_attente:
             self.actions[action.id] = (chat_id, action)
             self.actions_le[action.id] = time.time()
@@ -513,6 +515,7 @@ class Pont:
                     logging.exception("échec du traitement")
                     chat = (update.get("message") or update.get("callback_query", {}).get("message") or {}).get("chat", {}).get("id")
                     if chat:
+                        logging.error("Message d'erreur envoyé sur Telegram : %s", message_erreur(e))
                         self._envoyer(chat, message_erreur(e))
 
 
@@ -559,7 +562,7 @@ def secret(nom: str) -> str:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%d/%m %H:%M:%S")
     for bavard in ("httpx", "httpx2", "httpcore"):  # leurs lignes contiennent le jeton du bot
         logging.getLogger(bavard).setLevel(logging.WARNING)
     try:  # compte Immolev : l'agent passe par la passerelle du site, sans clé API sur ce PC

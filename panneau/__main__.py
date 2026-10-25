@@ -642,7 +642,7 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 return self._json(200, etat.vue())
             if self.path == "/api/journal":
                 f = JOURNAL_DIR / "agent.log"
-                lignes = f.read_text(encoding="utf-8", errors="replace").splitlines()[-80:] if f.exists() else []
+                lignes = f.read_text(encoding="utf-8", errors="replace").splitlines()[-1000:] if f.exists() else []
                 return self._json(200, {"lignes": lignes})
             self._json(404, {"erreur": "inconnu"})
 

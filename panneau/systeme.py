@@ -57,7 +57,12 @@ def arreter_processus(pid: int) -> None:
 
 
 def lancer_detache(commande: list[str], dossier: Path, env: dict, journal: Path) -> int:
-    sortie = open(journal, "w", encoding="utf-8")
+    # le journal s'allonge d'un démarrage à l'autre (l'ancien est gardé en .1 au-delà de 5 Mo)
+    if journal.exists() and journal.stat().st_size > 5_000_000:
+        journal.replace(journal.with_suffix(journal.suffix + ".1"))
+    sortie = open(journal, "a", encoding="utf-8")
+    sortie.write(f"\n===== démarrage {time.strftime('%d/%m %H:%M:%S')} =====\n")
+    sortie.flush()
     if WINDOWS:
         drapeaux = 0x00000008 | 0x00000200 | SANS_FENETRE  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
         p = subprocess.Popen(commande, cwd=dossier, env=env, stdout=sortie, stderr=subprocess.STDOUT,
