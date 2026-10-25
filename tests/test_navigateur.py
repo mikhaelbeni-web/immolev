@@ -135,3 +135,18 @@ def test_connexion_avec_coffre_en_deux_etapes_puis_code(nav, tmp_path, monkeypat
             nav.se_connecter("Almerys")
     finally:
         serveur.shutdown()
+
+
+def test_ref_avec_diese_recherche_entree_et_bouton_retrouve_par_libelle(nav):
+    page = nav.aller_a((SITE / "onglets.html").as_uri())
+    champ = ref(page, r"champ « Rechercher un locataire »")
+    apres = nav.remplir_champ("#" + champ, "Martin")  # le modèle écrit « #76 »
+    assert "recherche lancée" in apres and "filtre : Martin" in apres
+    assert "VUE ARCHIVES" in nav.cliquer_bouton_sans_risque(ref(apres, "bouton « Archives »"))
+    page = nav.lire_page()
+    enregistrer = ref(page, "bouton « Enregistrer »")
+    libelle = nav.libelle(enregistrer)
+    nav.cliquer_bouton_sans_risque(ref(page, "bouton « Ajouter une ligne »"))  # refusé : pas sans risque
+    nav.page.evaluate("document.querySelector('[data-agent-ref]').remove()")
+    nav.lire_page()  # les références sont renumérotées : l'ancienne pointe ailleurs
+    assert "ENREGISTRÉ" in nav.cliquer_bouton(enregistrer, libelle=libelle)

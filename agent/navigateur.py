@@ -62,7 +62,8 @@ _JS_CARTE = r"""
 """
 
 
-BOUTONS_SANS_RISQUE = [r"^(re)?cherch", r"^actualis", r"^rafra[iî]ch", r"^afficher", r"^voir\b", r"^filtrer", r"^trier",
+BOUTONS_SANS_RISQUE = [r"^(re)?cherch", r"^actualis", r"^archiv", r"^acti(f|fs|ve|ves)\b", r"^en cours\b", r"^tou(s|tes)\b",
+                       r"^onglet\b", r"^plus\b", r"^moins\b", r"^ouvrir\b", r"^d[ée]tails?\b", r"^consulter\b", r"^rafra[iî]ch", r"^afficher", r"^voir\b", r"^filtrer", r"^trier",
                        r"^suivant$", r"^pr[ée]c[ée]dent$", r"^ok$",
                        r"^(se |me )?connecter$", r"^connexion$", r"^s'identifier$", r"^v[ée]rifier( le code)?$",
                        r"^valider (le )?code$",
@@ -161,6 +162,7 @@ class Navigateur:
         self.relancer()
 
     def _element(self, ref: str):
+        ref = str(ref).strip().lstrip("#").strip()  # le modèle écrit souvent « #76 »
         cadre = self.page.main_frame
         if "." in ref:
             i = int(ref.split(".")[0])
@@ -227,8 +229,20 @@ class Navigateur:
             lignes.append(f"  #{e['ref']} {e['sorte']} « {e['libelle']} »{detail}")
         return lignes
 
+    def _ouvrir(self, url: str) -> None:
+        """goto qui supporte la redirection d'un site pendant le chargement (« interrupted by another navigation »)."""
+        try:
+            self.page.goto(url)
+        except Exception as e:
+            if "interrupted by another navigation" not in str(e) and "net::ERR_ABORTED" not in str(e):
+                raise
+            try:
+                self.page.wait_for_load_state("load", timeout=15000)
+            except Exception:
+                pass
+
     def aller_a(self, url: str) -> str:
-        self.page.goto(url)
+        self._ouvrir(url)
         self._attendre()
         return self.lire_page()
 
@@ -253,6 +267,10 @@ class Navigateur:
         else:
             el.fill(valeur)
         relu = el.evaluate("e => e.type === 'checkbox' || e.type === 'radio' ? String(e.checked) : (e.tagName === 'SELECT' ? e.options[e.selectedIndex].text : e.value)")
+        if info["type"] == "search" or el.evaluate("e => e.getAttribute('role') === 'searchbox' || /^\\s*((re)?cherch|search|filtr)/i.test((e.placeholder || '') + ' ' + (e.getAttribute('aria-label') || ''))"):
+            el.press("Enter")  # un champ de recherche ne filtre souvent qu'après Entrée
+            self._attendre()
+            return f"#{ref} rempli ({relu!r}) et recherche lancée. Page après la recherche :\n" + self.lire_page()
         return f"#{ref} rempli, valeur relue : {relu!r}. Rien n'est enregistré tant qu'aucun bouton n'est cliqué."
 
     def _formulaire_connexion(self, domaine: str):
@@ -272,7 +290,7 @@ class Navigateur:
         """Connexion avec le coffre des accès. Les identifiants ne sortent jamais de cette fonction."""
         fiche = acces.trouver(site)
         if not acces.domaine_correspond(urlparse(self.page.url).hostname or "", fiche["domaine"]):
-            self.page.goto(fiche["url"])
+            self._ouvrir(fiche["url"])
             self._attendre()
         if fiche.get("mode") == "gmail":
             self.carte()
@@ -311,14 +329,44 @@ class Navigateur:
                     "quand elle l'envoie, relis la page, remplis le champ du code avec remplir_champ puis valide.")
         return f"Connecté à {fiche['nom']}.\n" + self.lire_page()
 
-    def cliquer_bouton(self, ref: str) -> str:
-        self._element(ref).click()
+    _JS_LIBELLE = "e => (e.innerText || e.value || e.getAttribute('aria-label') || e.getAttribute('title') || '').trim()"
+
+    def libelle(self, ref: str) -> str:
+        return self._element(ref).evaluate(self._JS_LIBELLE)
+
+    def cliquer_bouton(self, ref: str, libelle: str | None = None) -> str:
+        """libelle : texte du bouton au moment de la demande de confirmation. Si la page a été relue
+        entre-temps, la référence a pu changer : on retrouve le bouton par son texte, jamais un autre."""
+        try:
+            el = self._element(ref)
+            if libelle and el.evaluate(self._JS_LIBELLE) != libelle:
+                raise LookupError
+        except LookupError:
+            if not libelle:
+                raise
+            self.lire_page()
+            el = None
+            for cadre in self.page.frames:
+                try:
+                    trouves = cadre.locator("[data-agent-ref]").filter(has_text=libelle)
+                    for i in range(trouves.count()):
+                        if trouves.nth(i).evaluate(self._JS_LIBELLE) == libelle:
+                            if el is not None:
+                                raise LookupError(f"Plusieurs boutons « {libelle} » sur la page : relire la page et redemander la confirmation.")
+                            el = trouves.nth(i)
+                except LookupError:
+                    raise
+                except Exception:
+                    continue
+            if el is None:
+                raise LookupError(f"Le bouton « {libelle} » n'est plus sur la page (elle a changé) : relire la page et redemander la confirmation.")
+        el.click()
         self._attendre()
         return "Bouton cliqué. Page après le clic (vérifier que l'enregistrement a réussi) :\n" + self.lire_page()
 
     def cliquer_bouton_sans_risque(self, ref: str) -> str:
         el = self._element(ref)
-        libelle = el.evaluate("e => (e.innerText || e.value || e.getAttribute('aria-label') || '').trim()")
+        libelle = el.evaluate(self._JS_LIBELLE)
         if not any(m.search(libelle) for m in self.boutons_sans_risque):
             return f"Le bouton « {libelle} » n'est pas dans la liste sans risque : utiliser cliquer_bouton (avec confirmation)."
         el.click()

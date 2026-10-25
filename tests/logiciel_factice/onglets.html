@@ -1,0 +1,9 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<input type="search" placeholder="Rechercher un locataire" id="q">
+<div id="res">aucun filtre</div>
+<button onclick="document.getElementById('etat').textContent='VUE ARCHIVES'">Archives</button>
+<button onclick="this.parentNode.insertBefore(document.createElement('input'), this)">Ajouter une ligne</button>
+<button onclick="document.getElementById('etat').textContent='ENREGISTRÉ'">Enregistrer</button>
+<div id="etat"></div>
+<script>document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('res').textContent = 'filtre : ' + e.target.value; });</script>
+</body></html>

@@ -284,7 +284,9 @@ class Pont:
             apercu = f"\nVérifie contre le document papier :\n{apercu_document(doc)}" if doc else ""
             if action.outil == "cliquer_bouton" and self.navigateur:
                 try:
+                    action.parametres.setdefault("libelle", self.navigateur.libelle(action.parametres["ref"]))
                     apercu = "\n" + self.navigateur.apercu_formulaire(action.parametres["ref"])
+                    self._sauver_actions()
                 except Exception:
                     apercu = "\n(aperçu indisponible)"
             self._envoyer(chat_id, f"À confirmer : {action.resume()}{apercu}",
