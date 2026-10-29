@@ -161,10 +161,16 @@ def lister_fichiers() -> str:
 
 def _json(texte: str) -> Any:
     try:
-        return json.loads(texte)
+        d = json.loads(texte)
     except ValueError:
         m = re.search(r"[\[{].*[\]}]", texte, re.S)
-        return json.loads(m.group(0)) if m else None
+        try:
+            d = json.loads(m.group(0)) if m else None
+        except ValueError:
+            return None
+    if isinstance(d, dict) and isinstance(d.get("rawResponse"), str):  # réponse d'écriture du connecteur Outlook
+        return _json(d["rawResponse"])
+    return d
 
 
 def outils_fichiers(connecteurs: Any) -> dict[str, Outil]:

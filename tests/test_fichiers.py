@@ -58,7 +58,7 @@ class FauxConnecteurs:
         if outil == "list-drives":
             return json.dumps({"value": [{"id": "X", "name": "ODCMetadataArchive"}, {"id": "B81", "name": "OneDrive"}]})
         if outil == "upload-file-content":
-            return json.dumps({"id": "n1", "webUrl": "https://onedrive.live.com/x"})
+            return json.dumps({"message": "OK!", "rawResponse": json.dumps({"id": "n1", "webUrl": "https://onedrive.live.com/x"})})
         raise AssertionError(outil)
 
 
