@@ -25,7 +25,7 @@ import httpx
 from document.destination import Destination, LogicielNonConfigure, tracer
 
 from .connecteurs_mcp import ConnecteursMCP
-from . import fiche, regles
+from . import fiche, programmees, regles
 from .bureau import BUREAU, Bureau
 from .acces import dossier_donnees
 from .membres import Registre
@@ -170,6 +170,25 @@ class Pont:
                 "Sert quand un message contient plusieurs tâches indépendantes : garde la première, mets chacune des "
                 "autres dans la file avec une consigne complète et autonome.", {"consigne": {"type": "string"}}, False,
                 lambda consigne: self._mettre_en_file(chat_id, consigne))
+            outils["programmer_tache"] = Outil(
+                "programmer_tache", "Programme une tâche répétitive que tu feras seul à l'heure dite, quand le gestionnaire "
+                "le demande (« chaque lundi à 9 h… », « tous les matins… », « le 5 de chaque mois… »). consigne : complète et "
+                "autonome, comme si tu la recevais sans contexte. frequence : jour, ouvre (lundi-vendredi), semaine ou mois. "
+                "heure : HH:MM. jour_semaine : lundi…dimanche si semaine, sinon \"\". jour_mois : 1-31 si mois (31 = dernier "
+                "jour), sinon 0. Le résultat arrivera dans cette conversation ; les actions qui enregistrent ou envoient "
+                "demanderont toujours confirmation.",
+                {"consigne": {"type": "string"}, "frequence": {"type": "string", "enum": list(programmees.FREQUENCES)},
+                 "heure": {"type": "string"}, "jour_semaine": {"type": "string"}, "jour_mois": {"type": "integer"}}, False,
+                lambda consigne, frequence, heure, jour_semaine="", jour_mois=0: self._programmer(
+                    chat_id, consigne, frequence, heure, jour_semaine, jour_mois))
+            outils["taches_programmees"] = Outil(
+                "taches_programmees", "Liste les tâches répétitives programmées (identifiant, quand, consigne).", {}, False,
+                lambda: programmees.resume(dossier_donnees()))
+            outils["arreter_tache_programmee"] = Outil(
+                "arreter_tache_programmee", "Supprime une tâche répétitive (identifiant donné par taches_programmees).",
+                {"id": {"type": "string"}}, False,
+                lambda id: "Tâche répétitive supprimée." if programmees.modifier(dossier_donnees(), id, supprimer=True)
+                else "Identifiant inconnu : appelle taches_programmees.")
         return outils
 
     def _envoyer(self, chat_id: int, texte: str, boutons: list[list[dict[str, str]]] | None = None) -> None:
@@ -312,6 +331,26 @@ class Pont:
         if not self.asynchrone:
             return f"Tâche n° {tache.numero} notée (file non active dans ce mode)."
         return f"Tâche n° {tache.numero} ajoutée à la file."
+
+    def _programmer(self, chat_id: int, consigne: str, frequence: str, heure: str, jour_semaine: str, jour_mois: int) -> str:
+        try:
+            t = programmees.ajouter(dossier_donnees(), consigne, frequence, heure, jour_semaine, jour_mois, chat_id)
+        except ValueError as e:
+            return f"Non programmée : {e}"
+        return (f"Tâche répétitive programmée [{t['id']}] : {programmees.description(t)}. Elle tourne tant que l'agent est "
+                "démarré ; si le PC est éteint à l'heure prévue, elle est faite au démarrage suivant. Visible dans le panneau.")
+
+    def _boucle_programmees(self) -> None:
+        while True:
+            try:
+                for t, en_retard in programmees.a_lancer(dossier_donnees()):
+                    retard = " (en retard : le PC ou l'agent était arrêté à l'heure prévue)" if en_retard else ""
+                    logging.info("TÂCHE PROGRAMMÉE %s : %s", t["id"], t["consigne"][:200])
+                    self._mettre_en_file(int(t.get("chat_id", BUREAU)),
+                                         f"Tâche répétitive programmée ({programmees.description(t)}){retard} : {t['consigne']}")
+            except Exception:
+                logging.exception("tâches programmées")
+            time.sleep(30)
 
     def _etat_file(self) -> str:
         with self._cond:
@@ -511,6 +550,7 @@ class Pont:
         threading.Thread(target=self._boucle_ecoute, daemon=True).start()
         if self.bureau:
             threading.Thread(target=self._boucle_bureau, daemon=True).start()
+        threading.Thread(target=self._boucle_programmees, daemon=True).start()
         self._boucle_travail()
 
     def _boucle_ecoute(self) -> None:

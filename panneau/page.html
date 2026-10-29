@@ -208,6 +208,23 @@
     </div>
     <div class="msg" id="m-discussion"></div>
   </section>
+  <section class="carte" id="c-programmees">
+    <div class="titre"><h2>Tâches répétitives</h2><span class="etat" id="e-programmees"></span></div>
+    <p class="petit" style="margin:0 0 10px">L'agent les fait seul à l'heure dite, tant qu'il est démarré. Si le PC est éteint à ce moment-là, il la fait au démarrage suivant. Le résultat arrive dans la discussion ci-dessus (ou dans Telegram, pour une tâche demandée là-bas). Vous pouvez aussi simplement lui dire : « chaque lundi à 9 h, liste les loyers impayés ».</p>
+    <table id="t-programmees"></table>
+    <details id="d-programmer" style="margin-top:10px"><summary>Ajouter une tâche répétitive</summary>
+      <textarea id="i-prog-consigne" rows="2" style="width:100%;margin-top:8px" placeholder="Ex. : Liste les loyers impayés sur Rentila et prépare les relances."></textarea>
+      <div class="ligne" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+        <select id="s-prog-frequence"><option value="jour">Chaque jour</option><option value="ouvre">Chaque jour ouvré</option>
+          <option value="semaine" selected>Chaque semaine</option><option value="mois">Chaque mois</option></select>
+        <select id="s-prog-jour"><option>lundi</option><option>mardi</option><option>mercredi</option><option>jeudi</option><option>vendredi</option><option>samedi</option><option>dimanche</option></select>
+        <select id="s-prog-jour-mois" class="cache"></select>
+        <label class="petit">à <input type="time" id="i-prog-heure" value="09:00"></label>
+        <button id="b-programmer" style="margin-left:auto">Programmer</button>
+      </div>
+    </details>
+    <div class="msg" id="m-programmees"></div>
+  </section>
   <section class="carte">
     <div class="titre"><h2>Visage de l'agent</h2><span class="etat" id="e-visage"></span></div>
     <div class="corps" style="margin-left:0">
@@ -989,6 +1006,43 @@ creerDictee($("dictee-discussion"), {msgId: "m-discussion", compact: true, apres
   const z = $("i-discussion"); z.value = (z.value.trim() + " " + texte).trim(); z.focus();
 }});
 setInterval(rafraichirDiscussion, 1500);
+
+// tâches répétitives ---------------------------------------------------------
+$("s-prog-jour-mois").innerHTML = Array.from({length: 30}, (_, i) => `<option value="${i + 1}">le ${i + 1}</option>`).join("") + '<option value="31">le dernier jour</option>';
+$("s-prog-frequence").onchange = () => {
+  $("s-prog-jour").classList.toggle("cache", $("s-prog-frequence").value !== "semaine");
+  $("s-prog-jour-mois").classList.toggle("cache", $("s-prog-frequence").value !== "mois");
+};
+let progVu = "";
+async function rafraichirProgrammees() {
+  if ($("p-agent").offsetParent === null) return;
+  let r; try { r = await api("/api/programmees"); } catch (e) { return; }
+  const cle = JSON.stringify(r.taches);
+  if (cle === progVu) return;
+  progVu = cle;
+  $("e-programmees").textContent = r.taches.length ? r.taches.length + " programmée(s)" : "";
+  $("t-programmees").innerHTML = r.taches.map(t => `<tr><td><b>${esc(t.quand.charAt(0).toUpperCase() + t.quand.slice(1))}</b>
+      <span class="petit">${t.active === false ? "· en pause" : (t.prochaine ? "· prochaine le " + esc(t.prochaine) : "")}</span><br>${esc(t.consigne)}</td>
+      <td style="white-space:nowrap"><button class="second" data-prog="${t.active === false ? "reprendre" : "pause"}" data-id="${esc(t.id)}">${t.active === false ? "Reprendre" : "Pause"}</button>
+      <button class="second" data-prog="supprimer" data-id="${esc(t.id)}">Supprimer</button></td></tr>`).join("");
+}
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest("[data-prog]");
+  if (!b) return;
+  if (b.dataset.prog === "supprimer" && !confirm("Supprimer cette tâche répétitive ?")) return;
+  try { await api("/api/programmees", {action: b.dataset.prog, id: b.dataset.id}); msg("m-programmees", ""); progVu = ""; rafraichirProgrammees(); }
+  catch (e) { msg("m-programmees", e.message, "err"); }
+});
+$("b-programmer").onclick = async () => {
+  try {
+    await api("/api/programmees", {action: "ajouter", consigne: $("i-prog-consigne").value, frequence: $("s-prog-frequence").value,
+      heure: $("i-prog-heure").value, jour_semaine: $("s-prog-jour").value, jour_mois: Number($("s-prog-jour-mois").value)});
+    $("i-prog-consigne").value = ""; $("d-programmer").open = false;
+    msg("m-programmees", "Tâche programmée.", "ok"); progVu = ""; rafraichirProgrammees();
+  } catch (e) { msg("m-programmees", e.message, "err"); }
+};
+setInterval(rafraichirProgrammees, 5000);
+rafraichirProgrammees();
 rafraichirDiscussion();
 
 // ---- onglets

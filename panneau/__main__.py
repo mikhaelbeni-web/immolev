@@ -643,6 +643,13 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
             if self.path == "/api/discussion":
                 from agent import bureau
                 return self._json(200, {"messages": bureau.conversation(DONNEES)})
+            if self.path == "/api/programmees":
+                from agent import programmees
+                maintenant = datetime.now()
+                return self._json(200, {"taches": [
+                    {**t, "quand": programmees.description(t),
+                     "prochaine": (p.strftime("%d/%m à %H:%M") if (p := programmees.prochaine(t, maintenant)) else "")}
+                    for t in programmees.lister(DONNEES)]})
             if self.path == "/api/journal":
                 f = JOURNAL_DIR / "agent.log"
                 lignes = f.read_text(encoding="utf-8", errors="replace").splitlines()[-1000:] if f.exists() else []
@@ -707,6 +714,17 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                     raise ValueError("L'agent est arrêté : démarrez-le, puis renvoyez le message.")
                 from agent import bureau
                 bureau.envoyer(DONNEES, str(c.get("texte", "")), str(c.get("bouton", ""))[:60])
+            elif chemin == "/api/programmees":
+                from agent import programmees
+                action, ident = str(c.get("action", "")), str(c.get("id", ""))
+                if action == "ajouter":
+                    programmees.ajouter(DONNEES, str(c.get("consigne", "")), str(c.get("frequence", "")), str(c.get("heure", "")),
+                                        str(c.get("jour_semaine", "")), c.get("jour_mois") or 0)
+                elif action in ("pause", "reprendre", "supprimer"):
+                    programmees.modifier(DONNEES, ident, active=action == "reprendre" if action != "supprimer" else None,
+                                         supprimer=action == "supprimer")
+                else:
+                    raise ValueError("Action inconnue.")
             elif chemin == "/api/bureau":
                 etat.raccourci_bureau()
             elif chemin == "/api/demarrage":
