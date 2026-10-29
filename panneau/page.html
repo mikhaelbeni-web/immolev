@@ -572,7 +572,7 @@ function afficher(e) {
   if (e.maj) $("maj-version").textContent = "(" + e.maj.version + ")";
   if (e.fiche) afficherFiche(e.fiche);
   fait(7, !e.regles.vide, e.regles.vide ? "À compléter" : "Enregistrées");
-  if (!reglesTouchees && document.activeElement !== $("i-regles")) $("i-regles").value = e.regles.texte;
+  if (!reglesTouchees && document.activeElement !== $("i-regles")) { $("i-regles").value = e.regles.texte; reglesBase = e.regles.texte; }
   const g = e.messagerie.gmail, o = e.messagerie.outlook;
   const nbBoites = e.messagerie.mail.length + g.comptes.length + (o.comptes || []).length;
   $("t-mail").innerHTML = e.messagerie.mail.map(a => `<tr><td>${esc(a)}</td><td><button class="second" data-retirer-mail="${esc(a)}">Retirer</button></td></tr>`).join("");
@@ -752,7 +752,7 @@ $("b-quitter").onclick = async () => {
   document.body.innerHTML = '<main><section class="carte agent"><h2>Immolev est fermé</h2><p>L\'agent est arrêté. Vous pouvez remplacer le dossier, puis rouvrir « Ouvrir Immolev ».</p></section></main>';
 };
 
-let acces = [], siteEnCours = null, reglesTouchees = false;
+let acces = [], siteEnCours = null, reglesTouchees = false, reglesBase = null;
 $("b-compte").onclick = () => { $("m2").dataset.local = 1; action($("b-compte"), "m2",
   () => api("/api/compte", {identifiant: $("i-compte-id").value, mot_de_passe: $("i-compte-mdp").value}),
   () => { $("i-compte-id").value = $("i-compte-mdp").value = ""; delete $("m2").dataset.local; return "Compte accepté : l'agent est connecté."; }); };
@@ -900,8 +900,8 @@ $("b-fiche").onclick = () => {
   action($("b-fiche"), "m8", () => api("/api/fiche", {reponses}),
     () => { ficheTouchee = false; return "Questionnaire enregistré : l'agent s'en sert dès la prochaine demande."; });
 };
-$("b-regles").onclick = () => action($("b-regles"), "m7r", () => api("/api/regles", {texte: $("i-regles").value}),
-  () => { reglesTouchees = false; return "Règles enregistrées : l'agent les applique dès la prochaine demande."; });
+$("b-regles").onclick = () => action($("b-regles"), "m7r", () => api("/api/regles", {texte: $("i-regles").value, base: reglesBase}),
+  () => { reglesTouchees = false; reglesBase = $("i-regles").value; return "Règles enregistrées : l'agent les applique dès la prochaine demande."; });
 $("i-site-nom").onchange = () => $("i-site-autre").classList.toggle("cache", $("i-site-nom").value !== "");
 function viderSite() {
   siteEnCours = null; for (const i of ["i-site-autre", "i-site-url", "i-site-id", "i-site-mdp", "i-site-gmail"]) $(i).value = "";

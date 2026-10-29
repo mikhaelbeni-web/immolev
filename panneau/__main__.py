@@ -759,6 +759,12 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
             elif chemin == "/api/regles":
                 etat._acces()
                 from agent import regles
+                base = c.get("base")
+                norm = lambda t: " ".join(str(t).split())
+                actuel = regles.lire()
+                if base is not None and actuel.strip() and norm(base) != norm(actuel):
+                    raise ValueError("Les règles ont été modifiées ailleurs depuis l'ouverture de cette carte. "
+                                     "Copiez vos changements, cliquez sur Actualiser, puis refaites-les.")
                 regles.ecrire(str(c.get("texte", "")))
             elif chemin == "/api/fiche":
                 etat._acces()

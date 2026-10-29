@@ -22,7 +22,7 @@ QUESTIONS = [
     ("signature", "Mails", "Signature à mettre en bas des mails, et vouvoiement ou tutoiement selon les destinataires", "Mikhael Benichou – Milev Invest ; vouvoiement sauf équipe"),
     ("hotels_suivi", "Hôtels", "Chiffres à préparer pour le rendez-vous avec Zack et Thomas (taux d'occupation, prix moyen, avis, ménage…) et sur quelle période", "Semaine écoulée : TO, prix moyen, CA, avis < 4"),
     ("gestion_directe", "Gestion directe", "Appartements et commerces en gestion directe (81 rue de Sèvres, Saint-Marc, Washington, Ozoir) : avec quel outil faites-vous quittances, relances et suivi des loyers ?", "Tableau Excel ; quittances Rentila…"),
-    ("prestataires_externes", "Gestion directe", "Que contrôler chez Ravive, Check My Guest, Majesti et Laforêt, et à quel rythme ?", "Reversement mensuel avant le 10"),
+    ("prestataires_externes", "Gestion directe", "Que contrôler chez Check My Guest, Majesti et Laforêt (sociétés de gestion), et à quel rythme ?", "Reversement mensuel avant le 10"),
     ("facturation_milev", "Vos sociétés", "Facturation de milev invest à Sacha Levy : rythme, montant ou mode de calcul, outil de facturation", "Facture mensuelle le 1er, forfait"),
     ("banques", "Vos sociétés", "Banque de mikalevinvest et de milev invest (le CIC tient LM Invest)", "Qonto pour milev invest"),
     ("echeances", "Vos sociétés", "Échéances à rappeler : clôtures d'exercice, TVA, CFE, déclaration de revenus, taxes foncières", "Clôture 31/12, TVA trimestrielle"),
