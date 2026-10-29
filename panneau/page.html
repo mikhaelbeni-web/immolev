@@ -1055,8 +1055,11 @@ rafraichirDiscussion();
 
 // ---- onglets
 let ongletChoisi = null;
+let ongletOuvert = null;
 function ouvrirOnglet(nom, choisi) {
   if (choisi) ongletChoisi = nom;
+  if (nom === ongletOuvert) return;  // appelé à chaque rafraîchissement : ne pas remonter la page pour rien
+  ongletOuvert = nom;
   document.querySelectorAll(".page").forEach(p => p.classList.toggle("actif", p.id === "p-" + nom));
   document.querySelectorAll(".onglet").forEach(b => b.classList.toggle("actif", b.dataset.onglet === nom));
   window.scrollTo(0, 0);
