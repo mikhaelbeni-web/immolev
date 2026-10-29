@@ -25,7 +25,7 @@ import httpx
 from document.destination import Destination, LogicielNonConfigure, tracer
 
 from .connecteurs_mcp import ConnecteursMCP
-from . import fiche, programmees, regles
+from . import fiche, patrimoine, programmees, regles
 from .bureau import BUREAU, Bureau
 from .acces import dossier_donnees
 from .membres import Registre
@@ -160,6 +160,11 @@ class Pont:
             "retenir_procedure", "Retient les étapes exactes d'une tâche réussie sur un site (écrans, champs, boutons), pour la "
             "refaire sans chercher. nom : ex. 'Logiciel copro : saisir une facture fournisseur'. Aucune donnée personnelle.",
             {"nom": {"type": "string"}, "etapes": {"type": "string"}}, True, fiche.retenir_procedure)
+        outils["consulter_patrimoine"] = Outil(
+            "consulter_patrimoine", "Caractéristiques exactes des appartements et locaux gérés (surface Carrez ou au sol, "
+            "type, chambres, salles de bain, étage) et chemin de chaque plan dans le OneDrive. À consulter avant de donner "
+            "une surface ou d'envoyer un plan. recherche : immeuble et/ou lot, ex. 'sevres 2G', 'commerce', '' pour la liste.",
+            {"recherche": {"type": "string"}}, False, lambda recherche="": patrimoine.consulter(dossier_donnees(), recherche))
         outils["noter_site"] = Outil(
             "noter_site", "Note une information technique sur un site pour la prochaine fois : méthode de connexion qui marche, "
             "erreur déjà vue et sa solution, étape qui demande l'équipe (captcha, code SMS). Une ligne, aucun identifiant ni donnée de client.",

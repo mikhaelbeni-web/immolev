@@ -22,6 +22,8 @@ import time
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 
+from connecteurs.gmail_mcp import joindre
+
 SERVICE_COFFRE = "immolev"
 
 # domaine → (serveur IMAP, serveur SMTP SSL)
@@ -110,24 +112,25 @@ class BoiteImap:
         finally:
             c.logout()
 
-    def _message(self, destinataire: str, sujet: str, texte: str) -> EmailMessage:
+    def _message(self, destinataire: str, sujet: str, texte: str, pieces=()) -> EmailMessage:
         m = EmailMessage()
         m["From"], m["To"], m["Subject"] = self.adresse, destinataire, sujet
         m["Date"], m["Message-ID"] = formatdate(localtime=True), make_msgid()
         m.set_content(texte)
+        joindre(m, pieces)
         return m
 
-    def brouillon(self, destinataire: str, sujet: str, texte: str) -> str:
+    def brouillon(self, destinataire: str, sujet: str, texte: str, pieces=()) -> str:
         c = self._imap()
         try:
             dossier = self._dossier(c, "\\Drafts") or "Drafts"
-            c.append(dossier, "\\Draft", imaplib.Time2Internaldate(time.time()), self._message(destinataire, sujet, texte).as_bytes())
+            c.append(dossier, "\\Draft", imaplib.Time2Internaldate(time.time()), self._message(destinataire, sujet, texte, pieces).as_bytes())
             return dossier
         finally:
             c.logout()
 
-    def envoyer(self, destinataire: str, sujet: str, texte: str) -> str:
-        m = self._message(destinataire, sujet, texte)
+    def envoyer(self, destinataire: str, sujet: str, texte: str, pieces=()) -> str:
+        m = self._message(destinataire, sujet, texte, pieces)
         with smtplib.SMTP_SSL(self.hote_smtp, 465, context=ssl.create_default_context(), timeout=30) as s:
             s.login(self.adresse, self.mdp)
             s.send_message(m)

@@ -11,8 +11,10 @@ from __future__ import annotations
 import base64
 import json
 import os
+import mimetypes
 import sys
 from email.message import EmailMessage
+from pathlib import Path
 from typing import Any, Protocol
 
 from mcp.server.mcpserver import MCPServer
@@ -29,14 +31,39 @@ def cle_jeton(adresse: str) -> str:
 class Boite(Protocol):
     def chercher(self, requete: str, nombre: int) -> list[dict[str, str]]: ...
     def lire(self, mail_id: str) -> dict[str, Any]: ...
-    def brouillon(self, destinataire: str, sujet: str, texte: str) -> str: ...
-    def envoyer(self, destinataire: str, sujet: str, texte: str) -> str: ...
+    def brouillon(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str: ...
+    def envoyer(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str: ...
 
 
-def _brut(destinataire: str, sujet: str, texte: str) -> str:
+def fichiers_joints(pieces: str, dossier: Path | None = None) -> list[Path]:
+    """Pièces jointes autorisées : seulement des fichiers du dossier « plans » d'Immolev, donnés par leur nom."""
+    if not pieces.strip():
+        return []
+    if dossier is None:
+        from agent.acces import dossier_donnees
+        dossier = dossier_donnees() / "plans"
+    dossier = Path(dossier).resolve()
+    sortie = []
+    for nom in (n.strip() for n in pieces.split(",")):
+        f = (dossier / nom).resolve()
+        if f.parent != dossier or not f.is_file():
+            disponibles = ", ".join(sorted(x.name for x in dossier.glob("*") if x.is_file())) if dossier.is_dir() else "aucun"
+            raise ValueError(f"Pièce jointe introuvable dans le dossier plans : {nom}. Fichiers : {disponibles}")
+        sortie.append(f)
+    return sortie
+
+
+def joindre(m: EmailMessage, pieces: list[Path]) -> None:
+    for f in pieces:
+        type_mime = (mimetypes.guess_type(f.name)[0] or "application/octet-stream").split("/")
+        m.add_attachment(f.read_bytes(), maintype=type_mime[0], subtype=type_mime[1], filename=f.name)
+
+
+def _brut(destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str:
     m = EmailMessage()
     m["To"], m["Subject"] = destinataire, sujet
     m.set_content(texte)
+    joindre(m, pieces)
     return base64.urlsafe_b64encode(m.as_bytes()).decode()
 
 
@@ -83,12 +110,12 @@ class BoiteGmail:
         return {"de": entetes.get("From", ""), "sujet": entetes.get("Subject", ""), "date": entetes.get("Date", ""),
                 "texte": "\n".join(textes)[:8000] or d.get("snippet", ""), "pieces_jointes": pieces}
 
-    def brouillon(self, destinataire: str, sujet: str, texte: str) -> str:
-        d = self.api.drafts().create(userId="me", body={"message": {"raw": _brut(destinataire, sujet, texte)}}).execute()
+    def brouillon(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str:
+        d = self.api.drafts().create(userId="me", body={"message": {"raw": _brut(destinataire, sujet, texte, pieces)}}).execute()
         return d["id"]
 
-    def envoyer(self, destinataire: str, sujet: str, texte: str) -> str:
-        return self.api.messages().send(userId="me", body={"raw": _brut(destinataire, sujet, texte)}).execute()["id"]
+    def envoyer(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str:
+        return self.api.messages().send(userId="me", body={"raw": _brut(destinataire, sujet, texte, pieces)}).execute()["id"]
 
 
 class BoiteFactice:
@@ -106,10 +133,10 @@ class BoiteFactice:
     def lire(self, mail_id: str) -> dict[str, Any]:
         return self.mails[mail_id]
 
-    def brouillon(self, destinataire: str, sujet: str, texte: str) -> str:
+    def brouillon(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str:
         return "brouillon-1"
 
-    def envoyer(self, destinataire: str, sujet: str, texte: str) -> str:
+    def envoyer(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str:
         self.envoyes.append(sujet)
         return f"envoi-{len(self.envoyes)}"
 
@@ -145,14 +172,18 @@ def creer_serveur(boites: "Boite | dict[str, Boite]", nom: str = "gmail") -> MCP
         return json.dumps(boite(compte).lire(mail_id), ensure_ascii=False)
 
     @serveur.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
-    def creer_brouillon(destinataire: str, sujet: str, texte: str, compte: str = "") -> str:
-        """Prépare un brouillon dans Gmail, sans l'envoyer."""
-        return f"Brouillon créé ({boite(compte).brouillon(destinataire, sujet, texte)}) pour {destinataire}"
+    def creer_brouillon(destinataire: str, sujet: str, texte: str, compte: str = "", pieces: str = "") -> str:
+        """Prépare un brouillon dans Gmail, sans l'envoyer. pieces : noms de fichiers du dossier plans d'Immolev, séparés par des virgules (ex. un plan d'appartement)."""
+        joints = fichiers_joints(pieces)
+        return f"Brouillon créé ({boite(compte).brouillon(destinataire, sujet, texte, joints)}) pour {destinataire}" + (
+            f", {len(joints)} pièce(s) jointe(s)" if joints else "")
 
     @serveur.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
-    def envoyer_mail(destinataire: str, sujet: str, texte: str, compte: str = "") -> str:
-        """Envoie un mail depuis une boîte Gmail du gestionnaire."""
-        return f"Mail « {sujet} » envoyé à {destinataire} ({boite(compte).envoyer(destinataire, sujet, texte)})"
+    def envoyer_mail(destinataire: str, sujet: str, texte: str, compte: str = "", pieces: str = "") -> str:
+        """Envoie un mail depuis une boîte Gmail du gestionnaire. pieces : noms de fichiers du dossier plans d'Immolev, séparés par des virgules."""
+        joints = fichiers_joints(pieces)
+        return f"Mail « {sujet} » envoyé à {destinataire} ({boite(compte).envoyer(destinataire, sujet, texte, joints)})" + (
+            f" avec {len(joints)} pièce(s) jointe(s)" if joints else "")
 
     return serveur
 
