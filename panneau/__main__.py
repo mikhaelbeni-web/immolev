@@ -640,6 +640,9 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
             etat.dernier_ping = time.time()
             if self.path == "/api/etat":
                 return self._json(200, etat.vue())
+            if self.path == "/api/discussion":
+                from agent import bureau
+                return self._json(200, {"messages": bureau.conversation(DONNEES)})
             if self.path == "/api/journal":
                 f = JOURNAL_DIR / "agent.log"
                 lignes = f.read_text(encoding="utf-8", errors="replace").splitlines()[-1000:] if f.exists() else []
@@ -699,6 +702,11 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 etat.demarrer_agent()
             elif chemin == "/api/agent/arreter":
                 etat.arreter_agent()
+            elif chemin == "/api/discussion":
+                if not etat.agent()["en_marche"]:
+                    raise ValueError("L'agent est arrêté : démarrez-le, puis renvoyez le message.")
+                from agent import bureau
+                bureau.envoyer(DONNEES, str(c.get("texte", "")), str(c.get("bouton", ""))[:60])
             elif chemin == "/api/bureau":
                 etat.raccourci_bureau()
             elif chemin == "/api/demarrage":

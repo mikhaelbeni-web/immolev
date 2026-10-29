@@ -132,6 +132,16 @@
   .dictee.compact .etiquette { font-size: 13px; color: var(--doux); }
   .dictee.compact .annuler { width: 30px; height: 30px; }
   .dictee.compact canvas { height: 20px; }
+  .fil { max-height: 460px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px;
+         background: var(--fond); border: 1px solid var(--bord); border-radius: 12px; }
+  .fil .vide { margin: auto; }
+  .bulle { max-width: 82%; padding: 9px 13px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+  .bulle.de-moi { align-self: flex-end; background: var(--encre); color: #f6f3ee; border-bottom-right-radius: 4px; }
+  .bulle.de-agent { align-self: flex-start; background: var(--carte); border: 1px solid var(--bord); border-bottom-left-radius: 4px; }
+  .bulle .heure { display: block; font-size: 11px; opacity: .6; margin-top: 3px; }
+  .bulle .choix { display: flex; gap: 8px; margin-top: 8px; }
+  .bulle.travail { color: var(--doux); font-style: italic; }
+  .saisie textarea { width: 100%; resize: vertical; margin-top: 10px; }
   .dictee .chrono { font-variant-numeric: tabular-nums; color: var(--texte); min-width: 36px; }
   @keyframes tourne { to { transform: rotate(360deg); } }
   @keyframes pulse { 50% { opacity: .25; } }
@@ -187,6 +197,16 @@
     <details id="d-journal"><summary>Journal de l'agent</summary>
       <div class="ligne" style="margin:8px 0"><button class="second" id="b-copier-journal">Copier le journal</button></div>
       <pre id="journal" style="user-select:text">…</pre></details>
+  </section>
+  <section class="carte" id="c-discussion">
+    <div class="titre"><h2>Discuter avec l'agent</h2><span class="etat" id="e-discussion"></span></div>
+    <p class="petit" style="margin:0 0 10px">Demandez-lui ce que vous voulez, comme sur Telegram. Les actions qui enregistrent ou envoient attendent votre clic sur « Confirmer ».</p>
+    <div class="fil" id="fil"><p class="petit vide">Aucun message pour l'instant.</p></div>
+    <div class="saisie">
+      <textarea id="i-discussion" rows="2" placeholder="Votre demande… (Entrée pour envoyer, Maj+Entrée pour aller à la ligne)"></textarea>
+      <div class="ligne" style="margin-top:8px"><div id="dictee-discussion"></div><button id="b-discussion" style="margin-left:auto">Envoyer</button></div>
+    </div>
+    <div class="msg" id="m-discussion"></div>
   </section>
   <section class="carte">
     <div class="titre"><h2>Visage de l'agent</h2><span class="etat" id="e-visage"></span></div>
@@ -569,7 +589,7 @@ function afficher(e) {
   $("pastille").className = "pastille " + (a.en_marche ? "on" : "off");
   $("agent-titre").textContent = a.en_marche ? "Agent en marche depuis " + a.depuis : "Agent arrêté";
   $("agent-texte").textContent = a.en_marche
-    ? "Envoyez vos demandes dans le groupe Telegram. Vous pouvez fermer cette fenêtre : l'agent continue."
+    ? "Écrivez-lui ci-dessous ou dans Telegram. Vous pouvez fermer cette fenêtre : l'agent continue."
     : "Une fois démarré, un Chrome dédié s'ouvre. L'agent s'y connecte seul aux sites de la rubrique Accès.";
   $("b-demarrer").classList.toggle("cache", a.en_marche);
   $("b-arreter").classList.toggle("cache", !a.en_marche);
@@ -925,6 +945,51 @@ for (const [i, b] of [["i-compte-mdp", "b-compte"], ["i-bot", "b-bot"]]) $(i).on
 
 rafraichir();
 setInterval(rafraichir, 2500);
+
+// discussion avec l'agent depuis le panneau ---------------------------------
+let filVu = "";
+async function rafraichirDiscussion() {
+  if ($("p-agent").offsetParent === null) return;  // onglet caché
+  let r;
+  try { r = await api("/api/discussion"); } catch (e) { return; }
+  const enMarche = !!(etat && etat.agent && etat.agent.en_marche);
+  const ms = r.messages || [], dernier = ms[ms.length - 1];
+  const travaille = enMarche && dernier && dernier.de === "moi";
+  const cle = JSON.stringify(ms) + travaille;
+  $("e-discussion").textContent = enMarche ? "" : "Agent arrêté";
+  if (cle === filVu || (window.getSelection().toString() && $("fil").contains(window.getSelection().anchorNode))) return;
+  filVu = cle;
+  const fil = $("fil"), enBas = fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40;
+  const heure = t => new Date(t * 1000).toLocaleString("fr-FR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+  fil.innerHTML = ms.length ? ms.map(m => `<div class="bulle de-${m.de}">${esc(m.texte)}` +
+      (m.action && !m.choix ? `<div class="choix"><button data-bouton="ok:${esc(m.action)}">Confirmer</button><button class="second" data-bouton="non:${esc(m.action)}">Annuler</button></div>` : "") +
+      `<span class="heure">${heure(m.le)}</span></div>`).join("") + (travaille ? '<div class="bulle de-agent travail">L\'agent travaille…</div>' : "")
+    : '<p class="petit vide">Aucun message pour l\'instant.</p>';
+  if (enBas || travaille) fil.scrollTop = fil.scrollHeight;
+}
+async function envoyerDiscussion(corps) {
+  try { await api("/api/discussion", corps); msg("m-discussion", ""); filVu = ""; await rafraichirDiscussion(); return true; }
+  catch (e) { msg("m-discussion", e.message, "err"); return false; }
+}
+$("b-discussion").onclick = async () => {
+  const z = $("i-discussion"), texte = z.value.trim();
+  if (!texte) return;
+  $("b-discussion").disabled = true;
+  if (await envoyerDiscussion({texte})) z.value = "";
+  $("b-discussion").disabled = false; z.focus();
+};
+$("i-discussion").addEventListener("keydown", ev => {
+  if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); $("b-discussion").click(); }
+});
+$("fil").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-bouton]");
+  if (b) { b.parentNode.querySelectorAll("button").forEach(x => x.disabled = true); envoyerDiscussion({bouton: b.dataset.bouton}); }
+});
+creerDictee($("dictee-discussion"), {msgId: "m-discussion", compact: true, apres: texte => {
+  const z = $("i-discussion"); z.value = (z.value.trim() + " " + texte).trim(); z.focus();
+}});
+setInterval(rafraichirDiscussion, 1500);
+rafraichirDiscussion();
 
 // ---- onglets
 let ongletChoisi = null;

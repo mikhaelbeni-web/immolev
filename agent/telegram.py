@@ -26,6 +26,7 @@ from document.destination import Destination, LogicielNonConfigure, tracer
 
 from .connecteurs_mcp import ConnecteursMCP
 from . import fiche, regles
+from .bureau import BUREAU, Bureau
 from .acces import dossier_donnees
 from .membres import Registre
 from .navigateur import Navigateur, outils_navigateur
@@ -91,6 +92,7 @@ class Pont:
     connecteurs: ConnecteursMCP | None = None
     transcrire: Callable[[bytes], str] | None = None  # messages vocaux → texte (agent/voix.py)
     registre: Registre | None = None  # demandes d'accès (agent/membres.py) ; sans lui, liste fixe
+    bureau: Bureau | None = None  # discussion depuis le panneau (agent/bureau.py)
     relu: float = 0.0
     # File des tâches : l'écoute de Telegram continue pendant qu'une tâche longue tourne ; les demandes
     # s'empilent et sont traitées une par une, dans l'ordre (Playwright n'accepte qu'un fil d'exécution).
@@ -171,6 +173,8 @@ class Pont:
         return outils
 
     def _envoyer(self, chat_id: int, texte: str, boutons: list[list[dict[str, str]]] | None = None) -> None:
+        if chat_id == BUREAU and self.bureau:
+            return self.bureau.ecrire(texte, boutons)
         params: dict[str, Any] = {"chat_id": chat_id, "text": texte[:4000]}
         if boutons:
             params["reply_markup"] = {"inline_keyboard": boutons}
@@ -183,8 +187,10 @@ class Pont:
         if not msg:
             return
         auteur, chat_id = msg.get("from", {}).get("id"), msg["chat"]["id"]
-        self._relire_membres(force=auteur not in self.membres)
-        if auteur not in self.membres:
+        depuis_bureau = chat_id == BUREAU and auteur == BUREAU and self.bureau is not None
+        if not depuis_bureau:
+            self._relire_membres(force=auteur not in self.membres)
+        if auteur not in self.membres and not depuis_bureau:
             tracer("telegram_refus", str(auteur), "membre_non_autorise")
             return self._demande_acces(msg)
         ctx = self._contexte(chat_id)
@@ -246,6 +252,8 @@ class Pont:
 
     def _conversation(self, chat_id: int) -> str:
         """Privée, groupe sans autre personne, ou groupe partagé : décide si l'agent peut y donner des données sensibles."""
+        if chat_id == BUREAU:
+            return "privée (le gestionnaire t'écrit depuis le panneau Immolev sur son PC)"
         if chat_id > 0:  # Telegram : identifiant positif = conversation privée avec le bot
             return "privée"
         cache = self.__dict__.setdefault("_membres_groupe", {})
@@ -446,6 +454,8 @@ class Pont:
 
     def _repondre_bouton(self, cb_id: str, **params: Any) -> None:
         """Arrête le sablier du bouton. Un échec (clic ancien, réseau coupé) ne doit jamais bloquer l'action."""
+        if cb_id == "bureau":
+            return
         try:
             self.api.appeler("answerCallbackQuery", callback_query_id=cb_id, **params)
         except Exception:
@@ -453,7 +463,8 @@ class Pont:
 
     def _traiter_bouton(self, cb: dict[str, Any]) -> None:
         self._relire_membres()
-        if cb.get("from", {}).get("id") not in self.membres:
+        bureau = cb.get("id") == "bureau" and cb.get("from", {}).get("id") == BUREAU and self.bureau is not None
+        if cb.get("from", {}).get("id") not in self.membres and not bureau:
             return self._repondre_bouton(cb["id"])
         choix, _, action_id = cb.get("data", "").partition(":")
         if choix in ("membre_ok", "membre_non"):
@@ -498,6 +509,8 @@ class Pont:
         self._recharger()
         self._recharger_actions()
         threading.Thread(target=self._boucle_ecoute, daemon=True).start()
+        if self.bureau:
+            threading.Thread(target=self._boucle_bureau, daemon=True).start()
         self._boucle_travail()
 
     def _boucle_ecoute(self) -> None:
@@ -519,6 +532,17 @@ class Pont:
                     if chat:
                         logging.error("Message d'erreur envoyé sur Telegram : %s", message_erreur(e))
                         self._envoyer(chat, message_erreur(e))
+
+
+    def _boucle_bureau(self) -> None:
+        while True:
+            for update in self.bureau.nouvelles():
+                try:
+                    self.traiter_update(update)
+                except Exception as e:
+                    logging.exception("échec du traitement (bureau)")
+                    self._envoyer(BUREAU, message_erreur(e))
+            time.sleep(0.7)
 
 
 def message_erreur(e: Exception) -> str:
@@ -579,4 +603,5 @@ if __name__ == "__main__":
     if connecteurs:
         logging.info("Connecteurs MCP :\n%s", connecteurs.etat())
     Pont(ApiTelegramHttp(secret("TELEGRAM_TOKEN")), membres, photos_autorisees=os.environ.get("TELEGRAM_PHOTOS", "1") == "1",
-         navigateur=nav, connecteurs=connecteurs, transcrire=voix_si_dispo(), registre=Registre(dossier_donnees())).ecouter()
+         navigateur=nav, connecteurs=connecteurs, transcrire=voix_si_dispo(), registre=Registre(dossier_donnees()),
+         bureau=Bureau(dossier_donnees())).ecouter()
