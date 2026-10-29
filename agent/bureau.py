@@ -18,6 +18,8 @@ from typing import Any
 BUREAU = 1  # identifiant de conversation : positif = privée (un vrai identifiant Telegram ne vaut jamais 1)
 DEMANDES = "bureau-demandes.jsonl"
 REPONSES = "bureau-reponses.jsonl"
+LU = "bureau-lu.json"
+PEREMPTION_S = 7200  # une demande restée sans réponse (agent arrêté, mise à jour) est traitée au démarrage si elle a moins de 2 h
 
 
 def _ajouter(fichier: Path, ligne: dict[str, Any]) -> None:
@@ -84,7 +86,11 @@ class Bureau:
     def __init__(self, dossier: Path):
         self.dossier = Path(dossier)
         f = self.dossier / DEMANDES
-        self.position = f.stat().st_size if f.exists() else 0  # ce qui a été écrit avant le démarrage est ignoré
+        taille = f.stat().st_size if f.exists() else 0
+        try:  # reprend là où l'agent s'était arrêté : une demande envoyée pendant un redémarrage n'est pas perdue
+            self.position = min(int(json.loads((self.dossier / LU).read_text(encoding="utf-8"))["position"]), taille)
+        except (OSError, ValueError, KeyError, TypeError):
+            self.position = 0
 
     def ecrire(self, texte: str, boutons: list[list[dict[str, str]]] | None = None) -> None:
         ligne: dict[str, Any] = {"le": time.time(), "texte": texte}
@@ -105,12 +111,18 @@ class Bureau:
         if fin < 0:
             return []  # ligne en cours d'écriture : on attend la suite
         self.position += fin + 1
+        try:
+            (self.dossier / LU).write_text(json.dumps({"position": self.position}), encoding="utf-8")
+        except OSError:
+            pass
         updates = []
         for brut in octets[:fin].splitlines():
             try:
                 d = json.loads(brut.decode("utf-8"))
             except ValueError:
                 continue
+            if time.time() - float(d.get("le", 0)) > PEREMPTION_S:
+                continue  # trop ancienne : ne pas exécuter une demande oubliée
             qui = {"id": BUREAU, "first_name": "Bureau"}
             if d.get("bouton"):
                 updates.append({"callback_query": {"id": "bureau", "from": qui, "data": d["bouton"],

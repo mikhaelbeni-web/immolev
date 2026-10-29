@@ -510,7 +510,7 @@ function afficher(e) {
   if (e.ia) {
     if (document.activeElement !== $("s-modele") && !$("s-modele").dataset.touche) $("s-modele").value = e.ia.modele;
     if (document.activeElement !== $("i-plafond") && !$("i-plafond").dataset.touche) $("i-plafond").value = String(e.ia.plafond).replace(".", ",");
-    $("t-couts").innerHTML = e.ia.couts.length ? "<tr><td colspan=2 class=petit style='text-align:left'>Dernières demandes (coût)</td></tr>" + e.ia.couts.map(c =>
+    vue("t-couts").html = e.ia.couts.length ? "<tr><td colspan=2 class=petit style='text-align:left'>Dernières demandes (coût)</td></tr>" + e.ia.couts.map(c =>
       `<tr><td><span class="petit">${esc(c.date)}</span> ${esc(c.demande)}</td><td>${c.cout.toFixed(2).replace(".", ",")} €</td></tr>`).join("") : "";
   }
   const ga = e.google_agent || {};
@@ -521,7 +521,7 @@ function afficher(e) {
   $("b-assistance").classList.toggle("cache", !!assis.en_cours);
   $("b-assistance-fin").classList.toggle("cache", !assis.en_cours);
   $("b-google").textContent = ga.fait ? "Changer de compte Google" : "Connecter le Gmail de l'agent";
-  $("p-google-compte").innerHTML = ga.fait && !ga.ouvert ? ((ga.adresses || []).length
+  vue("p-google-compte").html = ga.fait && !ga.ouvert ? ((ga.adresses || []).length
     ? "Compte connecté : <b>" + ga.adresses.map(esc).join("</b>, <b>") + "</b>"
     : "Compte connecté : adresse non lue par le panneau. Clique « Changer de compte Google » pour la voir dans Chrome.") : "";
   $("b-google").classList.toggle("cache", !!ga.ouvert);
@@ -549,17 +549,17 @@ function afficher(e) {
   }
 
   fait(4, e.membres.length > 0, e.membres.length ? e.membres.length + " personne(s)" : "");
-  $("t-membres").innerHTML = e.membres.map(m =>
+  vue("t-membres").html = e.membres.map(m =>
     `<tr><td>${esc(m.nom) || "<span class=petit>(sans nom)</span>"} <span class="petit">${esc(m.id)}</span></td>
      <td><button class="second" data-retirer="${esc(m.id)}">Retirer</button></td></tr>`).join("");
   $("b-chercher").disabled = e.agent.en_marche || !e.bot.enregistre;
-  $("t-demandes").innerHTML = e.demandes.map(d =>
+  vue("t-demandes").html = e.demandes.map(d =>
     `<tr><td>🔔 <b>${esc(d.nom)}</b> ${d.pseudo ? "@" + esc(d.pseudo) : ""} <span class="petit">· ${esc(d.lieu)} · ${esc(d.date)}</span></td>
      <td><button data-demande="${esc(d.id)}" data-accepter="1">Accepter</button>
          <button class="second" data-demande="${esc(d.id)}">Refuser</button></td></tr>`).join("");
 
   fait(5, e.acces.length > 0, e.acces.length ? e.acces.length + " site(s)" : "");
-  $("t-acces").innerHTML = e.acces.map(a =>
+  vue("t-acces").html = e.acces.map(a =>
     `<tr><td><b>${esc(a.nom)}</b> <span class="petit">${esc(a.domaine)} · ${a.mode === "gmail" ? "Gmail : " + esc(a.gmail) : esc(a.apercu)}</span></td>
      <td>${a.mode === "gmail" ? `<button data-gmail-site="${esc(a.gmail)}" data-url-site="${esc(a.url)}">Se connecter à ce site</button> ` : ""}<button class="second" data-modifier-site="${esc(a.id)}">Modifier</button>
          <button class="second" data-suppr-site="${esc(a.id)}">Supprimer</button></td></tr>`).join("");
@@ -575,9 +575,9 @@ function afficher(e) {
   if (!reglesTouchees && document.activeElement !== $("i-regles")) { $("i-regles").value = e.regles.texte; reglesBase = e.regles.texte; }
   const g = e.messagerie.gmail, o = e.messagerie.outlook;
   const nbBoites = e.messagerie.mail.length + g.comptes.length + (o.comptes || []).length;
-  $("t-mail").innerHTML = e.messagerie.mail.map(a => `<tr><td>${esc(a)}</td><td><button class="second" data-retirer-mail="${esc(a)}">Retirer</button></td></tr>`).join("");
+  vue("t-mail").html = e.messagerie.mail.map(a => `<tr><td>${esc(a)}</td><td><button class="second" data-retirer-mail="${esc(a)}">Retirer</button></td></tr>`).join("");
   fait(6, nbBoites > 0, nbBoites ? nbBoites + " boîte(s)" : "Facultatif");
-  $("t-gmail").innerHTML = g.comptes.map(a => `<tr><td>${esc(a)}</td><td><button class="second" data-retirer-gmail="${esc(a)}">Retirer</button></td></tr>`).join("");
+  vue("t-gmail").html = g.comptes.map(a => `<tr><td>${esc(a)}</td><td><button class="second" data-retirer-gmail="${esc(a)}">Retirer</button></td></tr>`).join("");
   if (g.client) $("gmail-client").classList.add("cache");
   if (g.client && attenteGoogle) { attenteGoogle = false; lancerGoogle(); }
   $("p-mail-intro").classList.toggle("cache", nbBoites > 0);
@@ -586,7 +586,7 @@ function afficher(e) {
   else if (g.connexion.erreur) msg("m6g", g.connexion.erreur, "err");
   else if ($("m6g").className.includes("att")) msg("m6g", "Boîte Gmail ajoutée.", "ok");
 
-  $("t-outlook").innerHTML = (o.comptes || []).map(c => `<tr><td>${esc(c.adresse)}</td><td><button class="second" data-retirer-ms="${esc(c.id)}">Retirer</button></td></tr>`).join("")
+  vue("t-outlook").html = (o.comptes || []).map(c => `<tr><td>${esc(c.adresse)}</td><td><button class="second" data-retirer-ms="${esc(c.id)}">Retirer</button></td></tr>`).join("")
     || (o.actif && o.comptes === null ? '<tr><td class="petit">Lecture des comptes…</td><td></td></tr>' : "");
   $("b-outlook").disabled = o.connexion.en_cours || o.installation_node.en_cours;
   if (o.installation_node.erreur) attenteMs = false;
@@ -620,7 +620,7 @@ function afficherVisages(v) {
   const choix = v.choix || {};
   if (visageSel === null) visageSel = choix.id || "";
   const tous = v.perso ? [{id: "perso", nom: "Mon image", genre: ""}, ...v.liste] : v.liste;
-  $("visages").innerHTML = tous.filter(a => !filtreVisage || a.genre === filtreVisage || a.id === "perso").map(a =>
+  vue("visages").html = tous.filter(a => !filtreVisage || a.genre === filtreVisage || a.id === "perso").map(a =>
     `<button class="visage ${a.id === visageSel ? "choisi" : ""}" data-visage="${esc(a.id)}" data-prenom="${a.id === "perso" ? "" : esc(a.nom)}">
        <img src="/avatar/${esc(a.id)}?${versionPerso}" alt="">${esc(a.nom)}</button>`).join("");
   if (!prenomTouche && document.activeElement !== $("i-prenom")) $("i-prenom").value = choix.nom || "";
@@ -706,7 +706,7 @@ $("b-bot").onclick = () => { $("m3").dataset.local = 1; action($("b-bot"), "m3",
   () => { $("i-bot").value = ""; delete $("m3").dataset.local; return "Bot enregistré."; }); };
 $("b-chercher").onclick = () => action($("b-chercher"), "m4", async () => {
   const r = await api("/api/membres/chercher", {});
-  $("t-trouves").innerHTML = r.expediteurs.map(x =>
+  vue("t-trouves").html = r.expediteurs.map(x =>
     `<tr><td><b>${esc(x.nom)}</b> ${x.pseudo ? "@" + esc(x.pseudo) : ""} <span class="petit">· ${esc(x.lieu)}</span></td>
      <td>${x.autorise ? '<span class="petit">déjà autorisé</span>' :
        `<button data-ajouter="${esc(x.id)}" data-nom="${esc(x.nom)}">Autoriser</button>`}</td></tr>`).join("");
@@ -869,6 +869,8 @@ function afficherFiche(f) {
         '<textarea rows="1" data-id="' + q.id + '" placeholder="' + echapper(q.exemple ? "Ex. : " + q.exemple : "") + '">' +
         echapper(q.reponse) + '</textarea></label><div class="fiche-micro" data-micro="' + q.id + '"></div></div>';
     }
+    if ($("fiche-questions").dataset.h !== html) {
+    $("fiche-questions").dataset.h = html;
     $("fiche-questions").innerHTML = html;
     $("fiche-questions").querySelectorAll("textarea").forEach(t => { t.oninput = () => { ficheTouchee = true; ajuster(t); }; ajuster(t); });
     $("fiche-questions").querySelectorAll("[data-micro]").forEach(h => {
@@ -878,6 +880,7 @@ function afficherFiche(f) {
         msg("m8", "Ajouté à la réponse. Relisez, puis Enregistrer le questionnaire.", "ok");
       }});
     });
+    }
   }
   $("proc-titre").textContent = "Procédures apprises par l'agent (" + f.procedures.length + ")";
   const liste = f.procedures.map((p, i) => '<div class="proc"><b>' + echapper(p.nom) +
@@ -924,6 +927,9 @@ $("b-gmail").onclick = () => {
   if (etat && etat.messagerie.gmail.client) return lancerGoogle();
   attenteGoogle = true; $("gmail-client").classList.remove("cache"); msg("m6g", "Première fois : faites le réglage unique ci-dessous, la connexion Google s'ouvrira ensuite.", "att");
 };
+// Ne réécrit un bloc que si son contenu change : sinon la page se reconstruit toutes les 2,5 s,
+// sa hauteur varie un instant et le navigateur remonte l'ascenseur.
+function vue(id) { const el = $(id); return {set html(h) { if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; } }}; }
 function msgHtml(id, html, type) { const m = $(id); if (m.innerHTML !== html) m.innerHTML = html; m.className = "msg " + type; }
 document.addEventListener("click", ev => { if (ev.target.id === "l-annuler-g") { ev.preventDefault();
   api("/api/gmail/annuler", {}).then(() => { msg("m6g", "Connexion Google annulée.", "ok"); rafraichir(); }); } });
@@ -972,7 +978,7 @@ async function rafraichirDiscussion() {
   const enMarche = !!(etat && etat.agent && etat.agent.en_marche);
   const ms = r.messages || [], dernier = ms[ms.length - 1];
   const travaille = enMarche && dernier && dernier.de === "moi";
-  const cle = JSON.stringify(ms) + travaille;
+  const cle = JSON.stringify(ms) + travaille + (travaille && Date.now() / 1000 - dernier.le > 600);
   $("e-discussion").textContent = enMarche ? "" : "Agent arrêté";
   if (cle === filVu || (window.getSelection().toString() && $("fil").contains(window.getSelection().anchorNode))) return;
   filVu = cle;
@@ -980,7 +986,9 @@ async function rafraichirDiscussion() {
   const heure = t => new Date(t * 1000).toLocaleString("fr-FR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
   fil.innerHTML = ms.length ? ms.map(m => `<div class="bulle de-${m.de}">${esc(m.texte)}` +
       (m.action && !m.choix ? `<div class="choix"><button data-bouton="ok:${esc(m.action)}">Confirmer</button><button class="second" data-bouton="non:${esc(m.action)}">Annuler</button></div>` : "") +
-      `<span class="heure">${heure(m.le)}</span></div>`).join("") + (travaille ? '<div class="bulle de-agent travail">L\'agent travaille…</div>' : "")
+      `<span class="heure">${heure(m.le)}</span></div>`).join("") + (travaille ? (Date.now() / 1000 - dernier.le > 600
+      ? '<div class="bulle de-agent travail">Toujours pas de réponse après 10 minutes. Si l\'agent a redémarré entre-temps, renvoyez votre message.</div>'
+      : '<div class="bulle de-agent travail">L\'agent travaille…</div>') : "")
     : '<p class="petit vide">Aucun message pour l\'instant.</p>';
   if (enBas || travaille) fil.scrollTop = fil.scrollHeight;
 }
@@ -1021,7 +1029,7 @@ async function rafraichirProgrammees() {
   if (cle === progVu) return;
   progVu = cle;
   $("e-programmees").textContent = r.taches.length ? r.taches.length + " programmée(s)" : "";
-  $("t-programmees").innerHTML = r.taches.map(t => `<tr><td><b>${esc(t.quand.charAt(0).toUpperCase() + t.quand.slice(1))}</b>
+  vue("t-programmees").html = r.taches.map(t => `<tr><td><b>${esc(t.quand.charAt(0).toUpperCase() + t.quand.slice(1))}</b>
       <span class="petit">${t.active === false ? "· en pause" : (t.prochaine ? "· prochaine le " + esc(t.prochaine) : "")}</span><br>${esc(t.consigne)}</td>
       <td style="white-space:nowrap"><button class="second" data-prog="${t.active === false ? "reprendre" : "pause"}" data-id="${esc(t.id)}">${t.active === false ? "Reprendre" : "Pause"}</button>
       <button class="second" data-prog="supprimer" data-id="${esc(t.id)}">Supprimer</button></td></tr>`).join("");

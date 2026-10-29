@@ -43,10 +43,16 @@ def test_confirmation_depuis_le_panneau(tmp_path, monkeypatch):
     assert [m for m in fil if m.get("action") == "a1"][0]["choix"] == "ok" and tg.envois == []
 
 
-def test_demandes_ecrites_avant_le_demarrage_ignorees_et_bouton_controle(tmp_path, monkeypatch):
-    bureau.envoyer(tmp_path, "ancienne")
+def test_demande_envoyee_pendant_un_redemarrage_traitee_mais_pas_les_vieilles(tmp_path, monkeypatch):
+    import json, time
+    bureau.envoyer(tmp_path, "pendant la mise à jour")
+    (tmp_path / bureau.DEMANDES).open("a", encoding="utf-8").write(
+        json.dumps({"id": "x", "le": time.time() - 3 * 3600, "texte": "oubliée"}) + "\n")
     pont, _ = _pont(tmp_path, monkeypatch, lambda d, o: Resultat("x"))
-    assert pont.bureau.nouvelles() == []
+    assert [u["message"]["text"] for u in pont.bureau.nouvelles()] == ["pendant la mise à jour"]
+    bureau.envoyer(tmp_path, "suivante")
+    relance = bureau.Bureau(tmp_path)  # redémarrage : reprend après ce qui est déjà lu
+    assert [u["message"]["text"] for u in relance.nouvelles()] == ["suivante"]
     try:
         bureau.envoyer(tmp_path, bouton="ok:a1\nautre")
         assert False
