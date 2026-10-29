@@ -118,7 +118,7 @@ Après chaque blocage résolu ou chaque étape humaine rencontrée, appelle note
 
 - « Retiens », « à partir de maintenant », « chez nous on fait… » : propose retenir_regle avec la règle en une ligne, sans donnée personnelle de tiers.
 - Une tâche réussie sur un site : propose retenir_procedure.
-- Une information donnée par le gestionnaire (biens, opérations, équipe, logiciels, prestataires, société, foyer) : completer_fiche.
+- Une information donnée par le gestionnaire qui répond à une question encore ouverte du questionnaire : completer_fiche ; une autre information durable sur son fonctionnement : retenir_regle.
 - Quand une règle du gestionnaire contredit les connaissances, sa règle gagne. Signale l'écart.
 
 ## Quand tu ne sais pas

@@ -15,28 +15,19 @@ CONNAISSANCES = Path(__file__).with_name("connaissances")
 
 # (identifiant, thème, question, exemple de réponse)
 QUESTIONS = [
-    ("identite", "Le gestionnaire", "Votre nom, fonction et employeur ou société", "Mikhael B., gestionnaire de développement foncier chez …"),
-    ("perimetre", "Le gestionnaire", "Activités suivies : promotion, hôtels, copropriétés, gestion locative, transactions…", "2 programmes en VEFA, 1 hôtel, 6 copropriétés"),
-    ("biens", "Le gestionnaire", "Biens et opérations gérés (nom court, adresse, rôle de chacun)", "Hôtel Le Parc (Nice, 42 chambres) ; Résidence Les Pins (copro 38 lots)"),
-    ("equipe", "L'équipe", "Qui travaille avec vous, avec quel rôle ?", "Sarah : assistante ; cabinet X : comptable"),
-    ("validation", "L'équipe", "Qui valide quoi (devis, paiements, appels de fonds, travaux) ?", "Paiements > 5 000 € validés par Mikhael"),
-    ("logiciels", "Outils", "Logiciels utilisés et pour quoi (copropriété, gestion locative, hôtel, comptabilité, banque)", "Copro : … ; hôtel : PMS … ; compta : …"),
-    ("deroule", "Façon de travailler", "Étapes d'un dossier type chez vous (opération, sinistre, travaux, clôture)", "Devis → validation → ordre de service → facture → paiement → classement"),
-    ("prestataires", "Façon de travailler", "Prestataires et partenaires habituels (notaire, architecte, entreprises, syndic, banque)", "Notaire : Me … ; banque : …"),
-    ("copro_habitudes", "Copropriétés", "Assemblées générales, appels de fonds, conseil syndical : vos habitudes et échéances", "AG en mai, appels trimestriels le 1er"),
-    ("hotel_habitudes", "Hôtels", "Indicateurs suivis et rythme de reporting (TO, prix moyen, RevPAR…)", "Rapport hebdo le lundi"),
-    ("mails", "Communication", "Adresses mail utilisées (pro, perso) et signature des mails", ""),
-    ("ton", "Communication", "Comment l'agent doit-il vous répondre ?", "Court, tutoiement, sans formule de politesse"),
-    ("societe", "Votre société", "Votre société : forme juridique, activité, date de clôture, régime de TVA et d'impôt", "SAS, holding, clôture 31/12, IS"),
-    ("comptable", "Votre société", "Expert-comptable (cabinet, contact) et logiciel de comptabilité", "Cabinet …, envoi des pièces le 5 du mois"),
-    ("remuneration", "Votre société", "Comment vous vous rémunérez (salaire, dividendes, honoraires) et à quel rythme", "Salaire mensuel + dividendes en juin"),
-    ("charges", "Votre société", "Charges et échéances récurrentes (loyers, emprunts, URSSAF, assurances)", "Emprunt le 5, URSSAF le 15"),
-    ("foyer", "Vie personnelle", "Foyer fiscal : situation, nombre de parts, personnes à charge", "Marié, 2 enfants, 3 parts"),
-    ("revenus", "Vie personnelle", "Sources de revenus du foyer (salaires, dividendes, revenus fonciers, LMNP, SCI)", "Salaire, dividendes, 2 appartements en location nue"),
-    ("patrimoine", "Vie personnelle", "Patrimoine immobilier et financier à suivre (SCI, biens, crédits, placements)", "SCI familiale (2 biens), résidence principale avec crédit"),
-    ("echeances_perso", "Vie personnelle", "Échéances personnelles à rappeler (déclaration de revenus, taxe foncière, assurances)", "Déclaration en ligne en mai"),
-    ("confidentiel", "Limites", "Qui peut voir les données sensibles (revenus, impôts, comptes, salaires) ?", "Seulement Mikhael, en message privé"),
-    ("interdits", "Limites", "Ce que l'agent ne doit jamais faire", ""),
+    # Questionnaire sur mesure : seulement ce que les « Règles du gestionnaire » ne disent pas encore.
+    ("contacts_equipe", "Contacts", "Coordonnées (mail ou téléphone) de Paolo, Zack et Thomas, et d'Even Gestion (David, Waren, Saul)", "Paolo : 06… ; Even Gestion : contact@…"),
+    ("contact_dan", "Contacts", "Adresse mail de Dan Penia (comptable de vos sociétés) et de Béatrice Robin", "dan@…"),
+    ("mails_vip", "Mails", "Expéditeurs ou sujets toujours urgents, à vous signaler tout de suite (en plus des fuites)", "Sacha Levy, syndics, mises en demeure, huissiers"),
+    ("signature", "Mails", "Signature à mettre en bas des mails, et vouvoiement ou tutoiement selon les destinataires", "Mikhael Benichou – Milev Invest ; vouvoiement sauf équipe"),
+    ("hotels_suivi", "Hôtels", "Chiffres à préparer pour le rendez-vous avec Zack et Thomas (taux d'occupation, prix moyen, avis, ménage…) et sur quelle période", "Semaine écoulée : TO, prix moyen, CA, avis < 4"),
+    ("gestion_directe", "Gestion directe", "Appartements et commerces en gestion directe (81 rue de Sèvres, Saint-Marc, Washington, Ozoir) : avec quel outil faites-vous quittances, relances et suivi des loyers ?", "Tableau Excel ; quittances Rentila…"),
+    ("prestataires_externes", "Gestion directe", "Que contrôler chez Ravive, Check My Guest, Majesti et Laforêt, et à quel rythme ?", "Reversement mensuel avant le 10"),
+    ("facturation_milev", "Vos sociétés", "Facturation de milev invest à Sacha Levy : rythme, montant ou mode de calcul, outil de facturation", "Facture mensuelle le 1er, forfait"),
+    ("banques", "Vos sociétés", "Banque de mikalevinvest et de milev invest (le CIC tient LM Invest)", "Qonto pour milev invest"),
+    ("echeances", "Vos sociétés", "Échéances à rappeler : clôtures d'exercice, TVA, CFE, déclaration de revenus, taxes foncières", "Clôture 31/12, TVA trimestrielle"),
+    ("foyer", "Vie personnelle", "Foyer fiscal (situation, nombre de parts) et revenus à suivre pour votre revenu fiscal de référence", "Marié, 2 enfants, 3 parts"),
+    ("interdits", "Limites", "Ce que l'agent ne doit jamais faire, même si on le lui demande", "Ne jamais payer, ne jamais écrire à un locataire sans accord"),
 ]
 IDS = {q[0] for q in QUESTIONS}
 

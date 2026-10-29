@@ -154,7 +154,7 @@ class Pont:
             "Une ligne, sans nom ni donnée personnelle.", {"regle": {"type": "string"}}, True, regles.ajouter)
         outils["completer_fiche"] = Outil(
             "completer_fiche", "Complète la fiche du gestionnaire (questionnaire) avec une réponse donnée par l'équipe. "
-            "question : identifiant de la question (ex. 'portails', 'equipe') ; reponse : une ou deux lignes, sans donnée personnelle.",
+            "question : identifiant de la question (ex. 'contacts_equipe', 'banques') ; reponse : une ou deux lignes, sans mot de passe, IBAN ni numéro fiscal.",
             {"question": {"type": "string"}, "reponse": {"type": "string"}}, True, fiche.completer)
         outils["retenir_procedure"] = Outil(
             "retenir_procedure", "Retient les étapes exactes d'une tâche réussie sur un site (écrans, champs, boutons), pour la "
