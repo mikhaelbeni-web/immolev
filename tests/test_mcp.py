@@ -52,7 +52,7 @@ def test_connecteur_gmail_immolev():
     c = ConnecteursMCP({"gmail": {"commande": sys.executable, "args": ["-m", "connecteurs.gmail_mcp"],
                                   "env": {"GMAIL_FAUX": "1", "PYTHONPATH": racine}}})
     try:
-        assert "gmail : 5 outils" in c.etat(), c.etat()
+        assert "gmail : 6 outils" in c.etat(), c.etat()
         outils = c.outils()
         assert not outils["gmail__chercher_mails"].ecriture and not outils["gmail__lire_mail"].ecriture
         assert outils["gmail__envoyer_mail"].ecriture and outils["gmail__creer_brouillon"].ecriture

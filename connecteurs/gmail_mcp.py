@@ -31,25 +31,30 @@ def cle_jeton(adresse: str) -> str:
 class Boite(Protocol):
     def chercher(self, requete: str, nombre: int) -> list[dict[str, str]]: ...
     def lire(self, mail_id: str) -> dict[str, Any]: ...
+    def piece(self, mail_id: str, nom: str) -> tuple[str, bytes]: ...
     def brouillon(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str: ...
     def envoyer(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str: ...
 
 
 def fichiers_joints(pieces: str, dossier: Path | None = None) -> list[Path]:
-    """Pièces jointes autorisées : seulement des fichiers du dossier « plans » d'Immolev, donnés par leur nom."""
+    """Pièces jointes autorisées : seulement des fichiers des dossiers « plans » et « pieces » d'Immolev
+    (nom, ou chemin relatif donné par lire_piece_jointe)."""
     if not pieces.strip():
         return []
     if dossier is None:
         from agent.acces import dossier_donnees
-        dossier = dossier_donnees() / "plans"
-    dossier = Path(dossier).resolve()
+        bases = [dossier_donnees() / "plans", dossier_donnees() / "pieces"]
+    else:
+        bases = [Path(dossier)]
+    bases = [b.resolve() for b in bases]
     sortie = []
     for nom in (n.strip() for n in pieces.split(",")):
-        f = (dossier / nom).resolve()
-        if f.parent != dossier or not f.is_file():
-            disponibles = ", ".join(sorted(x.name for x in dossier.glob("*") if x.is_file())) if dossier.is_dir() else "aucun"
-            raise ValueError(f"Pièce jointe introuvable dans le dossier plans : {nom}. Fichiers : {disponibles}")
-        sortie.append(f)
+        trouve = next((f for b in bases for f in [(b / nom).resolve()] if b in f.parents and f.is_file()), None)
+        if trouve is None:
+            disponibles = ", ".join(sorted(str(x.relative_to(b)).replace("\\", "/") for b in bases if b.is_dir()
+                                           for x in b.rglob("*") if x.is_file())[:80]) or "aucun"
+            raise ValueError(f"Pièce jointe introuvable : {nom}. Fichiers : {disponibles}")
+        sortie.append(trouve)
     return sortie
 
 
@@ -110,6 +115,20 @@ class BoiteGmail:
         return {"de": entetes.get("From", ""), "sujet": entetes.get("Subject", ""), "date": entetes.get("Date", ""),
                 "texte": "\n".join(textes)[:8000] or d.get("snippet", ""), "pieces_jointes": pieces}
 
+    def piece(self, mail_id: str, nom: str) -> tuple[str, bytes]:
+        d = self.api.messages().get(userId="me", id=mail_id, format="full").execute()
+        parties, trouvees = [d["payload"]], []
+        while parties:
+            p = parties.pop()
+            parties += p.get("parts", [])
+            if p.get("filename") and p.get("body", {}).get("attachmentId"):
+                trouvees.append(p)
+        choix = [p for p in trouvees if not nom or nom.lower() in p["filename"].lower()]
+        if not choix:
+            raise ValueError("Pièce introuvable. Pièces du mail : " + (", ".join(p["filename"] for p in trouvees) or "aucune"))
+        a = self.api.messages().attachments().get(userId="me", messageId=mail_id, id=choix[0]["body"]["attachmentId"]).execute()
+        return choix[0]["filename"], base64.urlsafe_b64decode(a["data"])
+
     def brouillon(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str:
         d = self.api.drafts().create(userId="me", body={"message": {"raw": _brut(destinataire, sujet, texte, pieces)}}).execute()
         return d["id"]
@@ -132,6 +151,9 @@ class BoiteFactice:
 
     def lire(self, mail_id: str) -> dict[str, Any]:
         return self.mails[mail_id]
+
+    def piece(self, mail_id: str, nom: str) -> tuple[str, bytes]:
+        return self.mails[mail_id]["pieces_jointes"][0], b"Appel de fonds 1 250 EUR"
 
     def brouillon(self, destinataire: str, sujet: str, texte: str, pieces: list[Path] = ()) -> str:
         return "brouillon-1"
@@ -170,6 +192,18 @@ def creer_serveur(boites: "Boite | dict[str, Boite]", nom: str = "gmail") -> MCP
     def lire_mail(mail_id: str, compte: str = "") -> str:
         """Lit un mail : expéditeur, sujet, date, texte, noms des pièces jointes."""
         return json.dumps(boite(compte).lire(mail_id), ensure_ascii=False)
+
+    @serveur.tool(annotations=lecture)
+    def enregistrer_piece_jointe(mail_id: str, nom: str = "", compte: str = "") -> str:
+        """Enregistre une pièce jointe sur ce PC (dossier pieces d'Immolev) ; la dernière ligne est le chemin du fichier."""
+        import re
+        from agent.acces import dossier_donnees
+        nom_piece, octets = boite(compte).piece(mail_id, nom)
+        dossier = dossier_donnees() / "pieces" / re.sub(r"\W", "", mail_id)[-16:]
+        dossier.mkdir(parents=True, exist_ok=True)
+        cible = dossier / (re.sub(r'[\\/:*?"<>|]', "_", Path(nom_piece).name)[:150] or "piece")
+        cible.write_bytes(octets)
+        return f"Pièce « {nom_piece} » enregistrée ({len(octets)} octets)\n{cible}"
 
     @serveur.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False))
     def creer_brouillon(destinataire: str, sujet: str, texte: str, compte: str = "", pieces: str = "") -> str:

@@ -25,6 +25,7 @@ import httpx
 from document.destination import Destination, LogicielNonConfigure, tracer
 
 from .connecteurs_mcp import ConnecteursMCP
+from .fichiers import outils_fichiers
 from . import fiche, patrimoine, programmees, regles
 from .bureau import BUREAU, Bureau
 from .acces import dossier_donnees
@@ -149,6 +150,7 @@ class Pont:
             outils.update(outils_navigateur(self.navigateur))
         if self.connecteurs:
             outils.update(self.connecteurs.outils())
+        outils.update(outils_fichiers(self.connecteurs))
         outils["retenir_regle"] = Outil(
             "retenir_regle", "Ajoute une règle de fonctionnement du gestionnaire, que tu appliqueras à toutes les demandes suivantes. "
             "Une ligne, sans nom ni donnée personnelle.", {"regle": {"type": "string"}}, True, regles.ajouter)
