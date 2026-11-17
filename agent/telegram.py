@@ -26,7 +26,7 @@ from document.destination import Destination, LogicielNonConfigure, tracer
 
 from .connecteurs_mcp import ConnecteursMCP
 from .fichiers import outils_fichiers
-from . import fiche, patrimoine, programmees, regles
+from . import banque, fiche, loyers, patrimoine, programmees, regles
 from .bureau import BUREAU, Bureau
 from .acces import dossier_donnees
 from .membres import Registre
@@ -171,6 +171,7 @@ class Pont:
             "noter_site", "Note une information technique sur un site pour la prochaine fois : méthode de connexion qui marche, "
             "erreur déjà vue et sa solution, étape qui demande l'équipe (captcha, code SMS). Une ligne, aucun identifiant ni donnée de client.",
             {"site": {"type": "string"}, "note": {"type": "string"}}, False, fiche.noter_site)
+        outils.update(self._outils_loyers())
         if chat_id is not None:
             outils["ajouter_tache"] = Outil(
                 "ajouter_tache", "Met une tâche dans la file : elle sera traitée seule, après la demande en cours. "
@@ -197,6 +198,67 @@ class Pont:
                 lambda id: "Tâche répétitive supprimée." if programmees.modifier(dossier_donnees(), id, supprimer=True)
                 else "Identifiant inconnu : appelle taches_programmees.")
         return outils
+
+    def _envoi_mail(self):
+        return self.connecteurs.appeler if self.connecteurs else None
+
+    def _outils_loyers(self) -> dict[str, Outil]:
+        d = dossier_donnees
+        o = [
+            Outil("loyers_point", "Rapprochement bancaire des loyers : relève la banque (lecture seule) et dit, bail par bail, "
+                  "qui a payé, payé en partie ou pas payé, et les virements reçus non rattachés (avec leur ref).", {}, False,
+                  lambda: (lambda r: (f"Relevé : {r['nouvelles']} nouvelle(s) opération(s). " +
+                                      " ".join(f"⚠️ {s} : {e}" for s, e in r["erreurs"].items()) + "\n\n")
+                           )(banque.releve(d())) + loyers.etat_actuel(d())),
+            Outil("loyers_baux", "Liste les baux suivis par le rapprochement des loyers et les réglages (JSON).", {}, False,
+                  lambda: json.dumps(loyers.charger(d()), ensure_ascii=False, indent=1)[:12000]),
+            Outil("enregistrer_bail", "Ajoute ou remplace un bail suivi par le rapprochement des loyers. bail : objet JSON en texte avec "
+                  "id (court, ex. 'livry-2e'), societe (LM INVEST, MIKALEVINVEST ou MILEV INVEST), bien, locataires (liste), "
+                  "emails (liste), adresse (adresse postale du logement), loyer (euros charges comprises), jour_echeance (1-31), "
+                  "debut (AAAA-MM-JJ), fin (AAAA-MM-JJ ou ''), payeurs (noms tels qu'ils apparaissent sur le relevé, ex. ['GASNIER']), "
+                  "garantie ('Visale', 'Garantme' ou ''), cautions (liste de noms), ajustements (montant d'un mois précis, "
+                  "ex. franchise : {'2026-12': 52.13}). Prendre les montants dans Rentila, pas de mémoire.",
+                  {"bail": {"type": "string"}}, False, lambda bail: loyers.enregistrer_bail(d(), json.loads(bail))),
+            Outil("associer_operation", "Rattache un virement reçu (ref donnée par loyers_point) à un bail, ou l'écarte avec "
+                  "bail_id 'ignorer'. Le nom du payeur est retenu pour les mois suivants.",
+                  {"ref": {"type": "string"}, "bail_id": {"type": "string"}}, False,
+                  lambda ref, bail_id: loyers.associer_operation(d(), ref, bail_id)),
+            Outil("envoyer_mise_en_demeure", "Envoie par mail au locataire la mise en demeure préparée par le rapprochement "
+                  "(bail_id, mois AAAA-MM). Le recommandé papier reste à poster par le gestionnaire.",
+                  {"bail_id": {"type": "string"}, "mois": {"type": "string"}}, True,
+                  lambda bail_id, mois: loyers.envoyer_mise_en_demeure(d(), bail_id, mois, self._envoi_mail())),
+            Outil("regler_relances_loyers", "Règle les relances de loyers. auto : true = rappel (J+5) et relance (J+15) partent "
+                  "seuls par mail ; false = préparés et signalés. serveur et compte : boîte d'envoi (serveur MCP de type Gmail "
+                  "ou IMAP qui a l'outil envoyer_mail, et adresse du compte). debut_suivi : premier mois contrôlé, AAAA-MM. jour_semaine : jour du contrôle hebdomadaire.",
+                  {"auto": {"type": "boolean"}, "serveur": {"type": "string"}, "compte": {"type": "string"},
+                   "debut_suivi": {"type": "string"}, "jour_semaine": {"type": "string", "enum": loyers.JOURS}}, True,
+                  lambda auto, serveur, compte, debut_suivi, jour_semaine="lundi": (loyers.regler(
+                      d(), auto=auto, debut_suivi=debut_suivi, jour_semaine=jour_semaine,
+                      envoi={"serveur": serveur, "outil": "envoyer_mail", "compte": compte}) or "Relances réglées.")),
+        ]
+        return {x.nom: x for x in o}
+
+    def _boucle_loyers(self) -> None:
+        """Une fois par semaine (lundi à partir de 9 h, ou au premier démarrage suivant dans la semaine) : banque,
+        rapprochement, point complet et relances dues."""
+        f = dossier_donnees() / "loyers-tour.json"
+        while True:
+            try:
+                maintenant = time.localtime()
+                semaine = time.strftime("%G-S%V", maintenant)
+                fait = json.loads(f.read_text(encoding="utf-8")).get("semaine") if f.exists() else ""
+                d = loyers.charger(dossier_donnees())
+                jour = loyers.JOURS.index(d["reglages"]["jour_semaine"]) if d["reglages"]["jour_semaine"] in loyers.JOURS else 0
+                pret = maintenant.tm_wday > jour or (maintenant.tm_wday == jour and maintenant.tm_hour >= 9)
+                if pret and fait != semaine and d["baux"]:
+                    f.write_text(json.dumps({"semaine": semaine}), encoding="utf-8")
+                    msg = loyers.tour(dossier_donnees(), envoyer=self._envoi_mail(), point_complet=True)
+                    if msg:
+                        chat = BUREAU if self.bureau else min(self.membres)
+                        self._envoyer(chat, msg)
+            except Exception:
+                logging.exception("rapprochement des loyers")
+            time.sleep(600)
 
     def _envoyer(self, chat_id: int, texte: str, boutons: list[list[dict[str, str]]] | None = None) -> None:
         if chat_id == BUREAU and self.bureau:
@@ -558,6 +620,7 @@ class Pont:
         if self.bureau:
             threading.Thread(target=self._boucle_bureau, daemon=True).start()
         threading.Thread(target=self._boucle_programmees, daemon=True).start()
+        threading.Thread(target=self._boucle_loyers, daemon=True).start()
         self._boucle_travail()
 
     def _boucle_ecoute(self) -> None:

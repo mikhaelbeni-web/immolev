@@ -225,6 +225,22 @@
     </details>
     <div class="msg" id="m-programmees"></div>
   </section>
+  <section class="carte" id="c-banque">
+    <div class="titre"><h2>Banque et loyers</h2><span class="etat" id="e-banque"></span></div>
+    <p class="petit" style="margin:0 0 10px">Chaque lundi, l'agent relève les comptes des sociétés (lecture seule, aucun virement possible), rapproche les loyers et fait les relances. Les mises en demeure attendent toujours votre accord.</p>
+    <div id="p-banque-connexions"></div>
+    <div class="ligne" style="margin-top:8px;flex-wrap:wrap;gap:8px" id="l-banque-connecter">
+      <select id="s-banque-societe"></select>
+      <button id="b-banque-connecter">Relier ce compte CIC</button>
+    </div>
+    <details id="d-banque-app" style="margin-top:10px"><summary id="s-banque-app">Application Enable Banking</summary>
+      <p class="petit">Identifiant de l'application et contenu du fichier .pem téléchargé à sa création (Control Panel Enable Banking). Rangés dans le coffre Windows de ce PC.</p>
+      <input id="i-banque-app" style="width:100%" placeholder="Identifiant de l'application (ex. 1a2b3c4d-…)" autocomplete="off">
+      <textarea id="i-banque-pem" rows="4" style="width:100%;margin-top:8px" placeholder="-----BEGIN PRIVATE KEY----- …" autocomplete="off"></textarea>
+      <div class="ligne" style="margin-top:8px"><button id="b-banque-app" style="margin-left:auto">Enregistrer</button></div>
+    </details>
+    <div class="msg" id="m-banque"></div>
+  </section>
   <section class="carte">
     <div class="titre"><h2>Visage de l'agent</h2><span class="etat" id="e-visage"></span></div>
     <div class="corps" style="margin-left:0">
@@ -503,9 +519,40 @@ async function action(bouton, msgId, fn, ok) {
 }
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
+function afficherBanque(b) {
+  if (!b) return;
+  const cx = b.connexions || [];
+  $("e-banque").textContent = !b.application ? "À configurer" : (cx.length ? cx.length + " société(s) reliée(s)" : "Aucun compte relié");
+  $("e-banque").style.color = b.application && cx.length ? "" : "var(--orange)";
+  $("s-banque-app").textContent = b.application ? "Application Enable Banking (enregistrée)" : "Application Enable Banking (à enregistrer d'abord)";
+  vue("p-banque-connexions").html = cx.map(c => `<p class="petit" style="margin:4px 0"><b>${esc(c.societe)}</b> · ${esc(c.banque)} · ${esc(c.comptes.join(", "))} · accès valable jusqu'au ${esc(c.valable_jusqu.split("-").reverse().join("/"))}${c.jours_restants !== null && c.jours_restants <= 15 ? ' <b style="color:var(--orange)">à renouveler</b>' : ""} <a href="#" data-banque-off="${esc(c.societe)}">déconnecter</a></p>`).join("")
+    + `<p class="petit" style="margin:4px 0">${b.baux} bail(s) suivi(s) · relances ${b.auto ? "automatiques, contrôle chaque " + esc(b.jour) + " (rappel J+5, relance J+15)" : "préparées sans envoi"} · mise en demeure toujours soumise à votre accord</p>`;
+  $("l-banque-connecter").classList.toggle("cache", !b.application);
+  const sel = $("s-banque-societe");
+  if (sel.options.length !== (b.societes || []).length) sel.innerHTML = (b.societes || []).map(s => `<option>${esc(s)}</option>`).join("");
+}
+$("b-banque-app").onclick = () => action($("b-banque-app"), "m-banque", async () => {
+  await api("/api/banque/application", {app_id: $("i-banque-app").value, pem: $("i-banque-pem").value});
+  $("i-banque-app").value = ""; $("i-banque-pem").value = ""; $("d-banque-app").open = false;
+}, () => "Application enregistrée. Reliez maintenant le compte CIC de chaque société.");
+$("b-banque-connecter").onclick = () => {
+  const fenetre = window.open("about:blank", "_blank");  // ouverte tout de suite : sinon bloquée après l'attente
+  action($("b-banque-connecter"), "m-banque", async () => {
+    try { const r = await api("/api/banque/connecter", {societe: $("s-banque-societe").value}); fenetre.location = r.url; }
+    catch (e) { if (fenetre) fenetre.close(); throw e; }
+  }, () => "Identifiez-vous sur la page du CIC qui vient de s'ouvrir, puis validez l'accès. Choisissez les comptes où arrivent les loyers.");
+};
+document.addEventListener("click", ev => {
+  const a = ev.target.closest && ev.target.closest("[data-banque-off]");
+  if (!a) return;
+  ev.preventDefault();
+  if (confirm("Déconnecter la banque de " + a.dataset.banqueOff + " ?"))
+    api("/api/banque/deconnecter", {societe: a.dataset.banqueOff}).then(rafraichir, e => msg("m-banque", e.message, "err"));
+});
 function afficher(e) {
   try { setTimeout(majOnglets, 0); } catch (x) {}
   etat = e;
+  afficherBanque(e.banque);
   if (e.visage) afficherVisages(e.visage);
   if (e.ia) {
     if (document.activeElement !== $("s-modele") && !$("s-modele").dataset.touche) $("s-modele").value = e.ia.modele;
