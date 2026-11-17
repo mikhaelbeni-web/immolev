@@ -10,3 +10,4 @@ mcp>=2.2,<3
 keyring>=25
 google-api-python-client>=2.100
 google-auth-oauthlib>=1.2
+cryptography>=42

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Immolev · retour de la banque</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main style="max-width:560px;margin:60px auto;padding:0 20px;font-family:system-ui,sans-serif">
+  <h2>Retour de la banque</h2>
+  <p id="texte">Transmission de l'accès à Immolev sur votre PC…</p>
+</main>
+<script>
+// La banque revient ici avec ?code=…&state=PORT.nonce. Le code est renvoyé tel quel au panneau Immolev de ce PC
+// (127.0.0.1:PORT), qui seul peut l'échanger. Rien n'est envoyé au serveur Immolev ni gardé ici.
+(function () {
+  var q = new URLSearchParams(location.search);
+  var port = (q.get("state") || "").split(".")[0];
+  var t = document.getElementById("texte");
+  if (!/^\d{4,5}$/.test(port) || +port > 65535) {
+    t.textContent = "Lien incomplet : relancez « Relier ce compte CIC » depuis le panneau Immolev.";
+    return;
+  }
+  var cible = "http://127.0.0.1:" + port + "/banque/retour?" + q.toString();
+  history.replaceState(null, "", location.pathname);  // le code ne reste pas dans l'historique
+  location.replace(cible);
+  setTimeout(function () {
+    t.innerHTML = "Si rien ne se passe, vérifiez que le panneau Immolev est ouvert sur ce PC, puis <a id=l>cliquez ici</a>.";
+    document.getElementById("l").href = cible;
+  }, 4000);
+})();
+</script>
+</body>
+</html>

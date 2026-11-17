@@ -598,7 +598,17 @@ class Etat:
             "visage": {"choix": visage.lire(DONNEES), "liste": visage.liste(),
                        "perso": (DONNEES / "visage-perso.jpg").exists()},
             "ia": self.ia(),
+            "banque": self.banque(),
         }
+
+    def banque(self) -> dict:
+        try:
+            from agent import banque, loyers
+            d = loyers.charger(DONNEES)
+            return {"application": bool(banque.application()), "connexions": banque.resume_connexions(DONNEES),
+                    "baux": len(d["baux"]), "auto": bool(d["reglages"]["auto"]), "societes": banque.SOCIETES}
+        except Exception as e:  # composants pas encore installés (cryptography)
+            return {"application": False, "connexions": [], "baux": 0, "auto": False, "societes": [], "erreur": str(e)[:200]}
 
 
 # ---------------------------------------------------------------- serveur HTTP local
@@ -635,6 +645,8 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 return self._envoyer(200, img, "image/jpeg") if img else self._json(404, {})
             if self.path == "/api/vivant":
                 return self._json(200, {"ok": True})
+            if self.path.startswith("/banque/retour?"):  # retour de la banque (via immolev.vercel.app) : vérifié par « state »
+                return self._retour_banque()
             if not self._autorise():
                 return self._json(403, {"erreur": "refusé"})
             etat.dernier_ping = time.time()
@@ -655,6 +667,22 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                 lignes = f.read_text(encoding="utf-8", errors="replace").splitlines()[-1000:] if f.exists() else []
                 return self._json(200, {"lignes": lignes})
             self._json(404, {"erreur": "inconnu"})
+
+        def _retour_banque(self):
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            if q.get("error"):
+                titre, texte = "Connexion refusée", "La banque n'a pas donné l'accès : " + " ".join(q.get("error_description") or q["error"])
+            else:
+                try:
+                    from agent import banque
+                    titre, texte = "Banque reliée", banque.valider_retour(DONNEES, (q.get("code") or [""])[0], (q.get("state") or [""])[0])
+                except Exception as e:
+                    titre, texte = "Connexion non terminée", str(e)
+            import html as h
+            page = (f"<!doctype html><meta charset=utf-8><title>{h.escape(titre)}</title><body style='font-family:system-ui;"
+                    f"max-width:560px;margin:60px auto'><h2>{h.escape(titre)}</h2><p>{h.escape(texte)}</p>"
+                    "<p>Vous pouvez fermer cet onglet et revenir au panneau Immolev.</p></body>")
+            self._envoyer(200, page.encode(), "text/html; charset=utf-8")
 
         def do_POST(self):
             if not self._autorise():
@@ -725,6 +753,15 @@ def creer_serveur(etat: Etat, jeton: str, port: int = 0) -> ThreadingHTTPServer:
                                          supprimer=action == "supprimer")
                 else:
                     raise ValueError("Action inconnue.")
+            elif chemin == "/api/banque/application":
+                from agent import banque
+                banque.enregistrer_application(str(c.get("app_id", "")), str(c.get("pem", "")))
+            elif chemin == "/api/banque/connecter":
+                from agent import banque
+                return {"url": banque.lien_connexion(DONNEES, str(c.get("societe", "")), self.server.server_address[1])}
+            elif chemin == "/api/banque/deconnecter":
+                from agent import banque
+                banque.deconnecter(DONNEES, str(c.get("societe", "")))
             elif chemin == "/api/bureau":
                 etat.raccourci_bureau()
             elif chemin == "/api/demarrage":
