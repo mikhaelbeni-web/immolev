@@ -10,6 +10,7 @@ Principe : les virements reçus sur les comptes de la société du bail, reconnu
 échéances les plus anciennes d'abord (report de solde). Un virement reconnu seulement au montant ne compte pas : il
 bloque la relance et il est signalé, jusqu'à ce que le gestionnaire l'associe (associer_operation).
 
+Contrôle une fois par semaine : chaque palier part au premier contrôle qui suit son seuil.
 Paliers : rappel amiable (J+5) et relance ferme (J+15) partent seuls par mail quand le mode automatique est activé ;
 la mise en demeure (J+30) est préparée et attend toujours la confirmation du gestionnaire.
 """
@@ -28,12 +29,13 @@ from . import banque
 FICHIER, RELANCES, COURRIERS = "loyers.json", "relances.json", "courriers"
 PALIERS = [("rappel", 5), ("relance", 15), ("mise_en_demeure", 30)]
 NOMS_PALIERS = {"rappel": "rappel amiable", "relance": "relance ferme", "mise_en_demeure": "mise en demeure"}
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
 SEUIL = 1.0  # en dessous d'un euro de reste, l'échéance est soldée
 REGLAGES_DEFAUT = {
     "debut_suivi": "",          # AAAA-MM : premier mois contrôlé
     "auto": False,              # rappel et relance envoyés seuls (sinon : préparés et signalés)
-    "jour_rapport": 6,          # jour du mois du point complet
+    "jour_semaine": "lundi",    # contrôle une fois par semaine, ce jour-là à partir de 9 h
     "envoi": {"serveur": "", "outil": "envoyer_mail", "compte": ""},
     "signatures": {},           # société → signature des mails et courriers
 }
@@ -386,7 +388,7 @@ def tour(dossier: Path, aujourd_hui: date | None = None, envoyer: Callable[[str,
                          f"({raison}), {euros(e['solde'])} dus, {x['retard']} jours de retard.\n  Objet : {sujet}\n  "
                          + texte.replace("\n", "\n  "))
     _ecrire(Path(dossier) / RELANCES, faites)
-    complet = point_complet if point_complet is not None else j.day == int(d["reglages"]["jour_rapport"])
+    complet = bool(point_complet)
     if not (actions or a_valider or manuelles or suspendues or lignes_banque or complet):
         return None
     morceaux = ["Rapprochement des loyers du " + j.strftime("%d/%m/%Y")]

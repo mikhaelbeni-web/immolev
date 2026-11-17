@@ -229,26 +229,30 @@ class Pont:
                   lambda bail_id, mois: loyers.envoyer_mise_en_demeure(d(), bail_id, mois, self._envoi_mail())),
             Outil("regler_relances_loyers", "Règle les relances de loyers. auto : true = rappel (J+5) et relance (J+15) partent "
                   "seuls par mail ; false = préparés et signalés. serveur et compte : boîte d'envoi (serveur MCP de type Gmail "
-                  "ou IMAP qui a l'outil envoyer_mail, et adresse du compte). debut_suivi : premier mois contrôlé, AAAA-MM.",
+                  "ou IMAP qui a l'outil envoyer_mail, et adresse du compte). debut_suivi : premier mois contrôlé, AAAA-MM. jour_semaine : jour du contrôle hebdomadaire.",
                   {"auto": {"type": "boolean"}, "serveur": {"type": "string"}, "compte": {"type": "string"},
-                   "debut_suivi": {"type": "string"}}, True,
-                  lambda auto, serveur, compte, debut_suivi: (loyers.regler(
-                      d(), auto=auto, debut_suivi=debut_suivi,
+                   "debut_suivi": {"type": "string"}, "jour_semaine": {"type": "string", "enum": loyers.JOURS}}, True,
+                  lambda auto, serveur, compte, debut_suivi, jour_semaine="lundi": (loyers.regler(
+                      d(), auto=auto, debut_suivi=debut_suivi, jour_semaine=jour_semaine,
                       envoi={"serveur": serveur, "outil": "envoyer_mail", "compte": compte}) or "Relances réglées.")),
         ]
         return {x.nom: x for x in o}
 
     def _boucle_loyers(self) -> None:
-        """Une fois par jour à partir de 9 h : banque, rapprochement, relances dues ; message seulement s'il y a du nouveau."""
+        """Une fois par semaine (lundi à partir de 9 h, ou au premier démarrage suivant dans la semaine) : banque,
+        rapprochement, point complet et relances dues."""
         f = dossier_donnees() / "loyers-tour.json"
         while True:
             try:
                 maintenant = time.localtime()
-                jour = time.strftime("%Y-%m-%d", maintenant)
-                fait = json.loads(f.read_text(encoding="utf-8")).get("le") if f.exists() else ""
-                if maintenant.tm_hour >= 9 and fait != jour and loyers.charger(dossier_donnees())["baux"]:
-                    f.write_text(json.dumps({"le": jour}), encoding="utf-8")
-                    msg = loyers.tour(dossier_donnees(), envoyer=self._envoi_mail())
+                semaine = time.strftime("%G-S%V", maintenant)
+                fait = json.loads(f.read_text(encoding="utf-8")).get("semaine") if f.exists() else ""
+                d = loyers.charger(dossier_donnees())
+                jour = loyers.JOURS.index(d["reglages"]["jour_semaine"]) if d["reglages"]["jour_semaine"] in loyers.JOURS else 0
+                pret = maintenant.tm_wday > jour or (maintenant.tm_wday == jour and maintenant.tm_hour >= 9)
+                if pret and fait != semaine and d["baux"]:
+                    f.write_text(json.dumps({"semaine": semaine}), encoding="utf-8")
+                    msg = loyers.tour(dossier_donnees(), envoyer=self._envoi_mail(), point_complet=True)
                     if msg:
                         chat = BUREAU if self.bureau else min(self.membres)
                         self._envoyer(chat, msg)

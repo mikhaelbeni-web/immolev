@@ -227,7 +227,7 @@
   </section>
   <section class="carte" id="c-banque">
     <div class="titre"><h2>Banque et loyers</h2><span class="etat" id="e-banque"></span></div>
-    <p class="petit" style="margin:0 0 10px">L'agent relève chaque matin les comptes des sociétés (lecture seule, aucun virement possible), rapproche les loyers et fait les relances. Les mises en demeure attendent toujours votre accord.</p>
+    <p class="petit" style="margin:0 0 10px">Chaque lundi, l'agent relève les comptes des sociétés (lecture seule, aucun virement possible), rapproche les loyers et fait les relances. Les mises en demeure attendent toujours votre accord.</p>
     <div id="p-banque-connexions"></div>
     <div class="ligne" style="margin-top:8px;flex-wrap:wrap;gap:8px" id="l-banque-connecter">
       <select id="s-banque-societe"></select>
@@ -526,7 +526,7 @@ function afficherBanque(b) {
   $("e-banque").style.color = b.application && cx.length ? "" : "var(--orange)";
   $("s-banque-app").textContent = b.application ? "Application Enable Banking (enregistrée)" : "Application Enable Banking (à enregistrer d'abord)";
   vue("p-banque-connexions").html = cx.map(c => `<p class="petit" style="margin:4px 0"><b>${esc(c.societe)}</b> · ${esc(c.banque)} · ${esc(c.comptes.join(", "))} · accès valable jusqu'au ${esc(c.valable_jusqu.split("-").reverse().join("/"))}${c.jours_restants !== null && c.jours_restants <= 15 ? ' <b style="color:var(--orange)">à renouveler</b>' : ""} <a href="#" data-banque-off="${esc(c.societe)}">déconnecter</a></p>`).join("")
-    + `<p class="petit" style="margin:4px 0">${b.baux} bail(s) suivi(s) · relances ${b.auto ? "automatiques (rappel J+5, relance J+15)" : "préparées sans envoi"} · mise en demeure toujours soumise à votre accord</p>`;
+    + `<p class="petit" style="margin:4px 0">${b.baux} bail(s) suivi(s) · relances ${b.auto ? "automatiques, contrôle chaque " + esc(b.jour) + " (rappel J+5, relance J+15)" : "préparées sans envoi"} · mise en demeure toujours soumise à votre accord</p>`;
   $("l-banque-connecter").classList.toggle("cache", !b.application);
   const sel = $("s-banque-societe");
   if (sel.options.length !== (b.societes || []).length) sel.innerHTML = (b.societes || []).map(s => `<option>${esc(s)}</option>`).join("");

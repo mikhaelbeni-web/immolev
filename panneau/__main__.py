@@ -606,7 +606,7 @@ class Etat:
             from agent import banque, loyers
             d = loyers.charger(DONNEES)
             return {"application": bool(banque.application()), "connexions": banque.resume_connexions(DONNEES),
-                    "baux": len(d["baux"]), "auto": bool(d["reglages"]["auto"]), "societes": banque.SOCIETES}
+                    "baux": len(d["baux"]), "auto": bool(d["reglages"]["auto"]), "jour": d["reglages"]["jour_semaine"], "societes": banque.SOCIETES}
         except Exception as e:  # composants pas encore installés (cryptography)
             return {"application": False, "connexions": [], "baux": 0, "auto": False, "societes": [], "erreur": str(e)[:200]}
 
